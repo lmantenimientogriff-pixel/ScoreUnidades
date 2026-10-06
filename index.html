@@ -156,7 +156,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       <div><label>Centro de costos</label><select id="uUN" onchange="renderFlota()"></select></div>
       <div><label>Tipo de unidad</label><select id="uTipo" onchange="renderFlota()"></select></div>
       <div><label>Taller</label><select id="uTaller" onchange="renderFlota()"></select></div>
-      <div style="grid-column:span 2"><label>Buscar</label><input id="uQ" placeholder="Interno, patente, OT, detalle…" oninput="renderFlota()"></div>
+      <div style="grid-column:span 2"><label>Buscar</label><input id="uQ" placeholder="Patente, interno, OT, detalle…" oninput="renderFlota()"></div>
     </div>
     <p class="help">Fuente: "Estado de Unidades General". Datos de la unidad: <b>BD-VEHICULOS</b> (Análisis Preventivos, solo activas). Estado: <b>Estado de Unidades General</b>; cuenta como <b>en mantenimiento</b> cuando su ESTADO no es DISPONIBLE / OPERATIVA.</p>
   </div>
@@ -180,7 +180,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
 <main class="wide view" id="v-lista">
   <div class="card">
     <div class="filters">
-      <div style="grid-column:span 2"><label>Buscar</label><input id="lQ" placeholder="Interno, patente, N°, descripción, OT…" oninput="renderLista()"></div>
+      <div style="grid-column:span 2"><label>Buscar</label><input id="lQ" placeholder="Patente, interno, N°, descripción, OT…" oninput="renderLista()"></div>
       <div><label>Estado</label><select id="lEstado" onchange="renderLista()"></select></div>
       <div><label>Criticidad</label><select id="lNivel" onchange="renderLista()"><option value="">Todas</option><option>Crítica</option><option>Alta</option><option>Media</option><option>Baja</option></select></div>
       <div><label>Centro de costos</label><select id="lUN" onchange="renderLista()"></select></div>
@@ -326,7 +326,7 @@ function q(s){return esc("'"+String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'")
 function diasDesde(iso){return iso?Math.round((HOY-_d(iso))/864e5):null;}
 function vivas(){return ISS.filter(n=>!n.descartada);}
 function flotaActiva(){return UNI.filter(u=>u.activo!==false);}
-function abiertasDe(u){return ISS.filter(n=>!n.cerrada&&_key(n.interno)===_key(u.interno));}
+function abiertasDe(u){return ISS.filter(n=>!n.cerrada&&_key(n.patente)===_key(u.patente));}
 function peorNivel(arr){return arr.length?arr.slice().sort((a,b)=>NORD[a.nivel]-NORD[b.nivel])[0].nivel:null;}
 
 function goTo(v,push){
@@ -404,13 +404,13 @@ function bars(items,color,fmtV){
   return items.map(i=>'<div class="bar-item" '+(i.click?'style="cursor:pointer" onclick="'+i.click+'"':'')+'><span class="lb" title="'+esc(i.l)+'">'+esc(i.l)+'</span><div class="bar-track"><div class="bar-fill" style="width:'+(i.v*100/(i.max||max))+'%;background:'+(i.c||color||'var(--N)')+'"></div></div><span class="vl">'+(fmtV?fmtV(i):i.v)+'</span></div>').join('');
 }
 function kpi(cls,l,v,s,click){return '<div class="kpi '+cls+(click?' click':'')+'" '+(click?'onclick="'+click+'"':'')+'><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="s">'+s+'</div></div>';}
-const HEAD_NOV='<tr><th>Nivel</th><th>Score</th><th>N°</th><th>Fecha</th><th>Interno</th><th>Sistema</th><th>Novedad</th><th>Unidad</th><th>Estado</th><th>Días</th><th>SLA</th><th>OT</th></tr>';
+const HEAD_NOV='<tr><th>Nivel</th><th>Score</th><th>N°</th><th>Fecha</th><th>Patente</th><th>Sistema</th><th>Novedad</th><th>Unidad</th><th>Estado</th><th>Días</th><th>SLA</th><th>OT</th></tr>';
 function filaNov(n){
-  return '<tr class="rw'+(n.vencida?' venc':'')+'" onclick="abrir('+q(n.id)+')"><td>'+(n.cerrada?nv('Cerrada'):nv(n.nivel))+'</td><td><b>'+n.score+'</b></td><td class="nw">'+esc(n.id)+'</td><td class="nw">'+fmt(n.fecha)+'</td><td class="nw"><b>'+esc(n.interno)+'</b>'+(n.reincidente?' <span class="chip a">R</span>':'')+'<div class="muted small">'+esc(n.tipoUnidad||'sin vincular')+'</div></td><td>'+esc(n.sistema)+'</td><td>'+esc(n.descripcion.slice(0,90))+'</td><td>'+(n.condicion==='Fuera de servicio'?'<span class="chip r">En mant.</span>':'<span class="chip g">Operando</span>')+'</td><td>'+esc(n.estadoRaw)+'</td><td>'+n.dias+'</td><td class="nw">'+(n.vencida?'<span class="chip r">'+fmt(n.fCompromiso)+'</span>':fmt(n.fCompromiso))+'</td><td class="nw">'+(n.ot?esc(n.ot):(n.cerrada?'—':'<span class="chip a">Sin OT</span>'))+'</td></tr>';
+  return '<tr class="rw'+(n.vencida?' venc':'')+'" onclick="abrir('+q(n.id)+')"><td>'+(n.cerrada?nv('Cerrada'):nv(n.nivel))+'</td><td><b>'+n.score+'</b></td><td class="nw">'+esc(n.id)+'</td><td class="nw">'+fmt(n.fecha)+'</td><td class="nw"><b>'+esc(n.patente)+'</b>'+(n.reincidente?' <span class="chip a">R</span>':'')+'<div class="muted small">'+esc([n.interno!==n.patente?n.interno:'',n.tipoUnidad||'sin vincular'].filter(Boolean).join(' · '))+'</div></td><td>'+esc(n.sistema)+'</td><td>'+esc(n.descripcion.slice(0,90))+'</td><td>'+(n.condicion==='Fuera de servicio'?'<span class="chip r">En mant.</span>':'<span class="chip g">Operando</span>')+'</td><td>'+esc(n.estadoRaw)+'</td><td>'+n.dias+'</td><td class="nw">'+(n.vencida?'<span class="chip r">'+fmt(n.fCompromiso)+'</span>':fmt(n.fCompromiso))+'</td><td class="nw">'+(n.ot?esc(n.ot):(n.cerrada?'—':'<span class="chip a">Sin OT</span>'))+'</td></tr>';
 }
 function card(n){
   return '<div class="nc '+(n.cerrada?'':n.nivel)+'" onclick="abrir('+q(n.id)+')"><div class="top"><span>'+(n.cerrada?nv('Cerrada'):nv(n.nivel))+' <span class="muted small">score '+n.score+'</span></span><span class="id">N° '+esc(n.id)+' · '+fmt(n.fecha)+'</span></div>'+
-    '<div class="u">'+esc(n.interno)+' <span class="muted small" style="font-weight:400">'+esc([n.patente,n.tipoUnidad,n.un].filter(Boolean).join(' · '))+'</span></div>'+
+    '<div class="u">'+esc(n.patente)+' <span class="muted small" style="font-weight:400">'+esc([n.interno!==n.patente?n.interno:'',n.tipoUnidad,n.un].filter(Boolean).join(' · '))+'</span></div>'+
     '<div><b>'+esc(n.sistema)+'</b></div><div class="d">'+esc(n.descripcion)+'</div>'+
     '<div><span class="chip b">'+esc(n.estadoRaw)+'</span>'+(n.condicion==='Fuera de servicio'?'<span class="chip r">Unidad en mant.</span>':'')+'<span class="chip">'+n.dias+' d</span>'+
     (n.vencida?'<span class="chip r">Fuera de SLA</span>':'')+(n.impSeg==='Sí'?'<span class="chip r">Seguridad</span>':'')+(n.impAmb==='Sí'?'<span class="chip a">Ambiental</span>':'')+
@@ -431,7 +431,7 @@ function renderDash(){
     kpi('B','Reportadas período',K.periodo.length,K.cerradasP.length+' cerradas en período')+
     kpi(K.mttr>7?'A':'G','MTTR',K.mttr.toFixed(1)+' d','tiempo medio de cierre')+
     kpi(K.enPlazo>=85?'G':K.enPlazo>=70?'A':'R','Cierre en SLA',K.nPlazo?K.enPlazo+'%':'—','meta ≥ 85% · n='+K.nPlazo)+
-    kpi(K.reinc.length?'O':'G','Reincidencias',K.reinc.length,pct(K.reinc.length,K.periodo.length)+'% · mismo interno+sistema ≤'+CFG.REINC_DIAS+' d',"irLista('','','reinc')");
+    kpi(K.reinc.length?'O':'G','Reincidencias',K.reinc.length,pct(K.reinc.length,K.periodo.length)+'% · misma patente+sistema ≤'+CFG.REINC_DIAS+' d',"irLista('','','reinc')");
 
   const top=K.abiertas.slice().sort((a,b)=>b.score-a.score||b.dias-a.dias).slice(0,10);
   $('topCrit').innerHTML=top.length?'<div class="only-desk"><table class="t"><thead>'+HEAD_NOV+'</thead><tbody>'+top.map(filaNov).join('')+'</tbody></table></div><div class="only-mob">'+top.map(card).join('')+'</div>':'<div class="empty">Sin novedades abiertas</div>';
@@ -447,8 +447,8 @@ function renderDash(){
   const ps=Object.entries(contar(K.periodo,'sistema')).sort((a,b)=>b[1]-a[1]); let cum=0;
   $('chPareto').innerHTML=bars(ps.slice(0,12).map(([k,v])=>{cum+=v;return {l:k,v,ac:pct(cum,K.periodo.length),c:crit[k]==='Crítico'?'var(--R)':crit[k]==='Mayor'?'var(--N)':'var(--GT)'};}),null,i=>i.v+' <small>'+i.ac+'%</small>')+
     '<p class="help">Rojo = sistema crítico · Negro = mayor · Gris = menor. Atacar primero hasta el 80% acumulado.</p>';
-  const cu=contar(K.periodo,'interno'), ru=contar(K.periodo.filter(n=>n.reincidente),'interno');
-  $('chUnidades').innerHTML=bars(Object.entries(cu).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>{const u=UNI.find(x=>x.interno===k);return {l:k+(u?' · '+u.tipo:''),v,r:ru[k]||0,c:ru[k]?'var(--O)':'var(--N)',click:'abrirUnidad('+q(k)+')'};}),null,i=>i.v+(i.r?' <small>R'+i.r+'</small>':''))+
+  const cu=contar(K.periodo,'patente'), ru=contar(K.periodo.filter(n=>n.reincidente),'patente');
+  $('chUnidades').innerHTML=bars(Object.entries(cu).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>{const u=UNI.find(x=>x.patente===k);return {l:k+(u?' · '+u.tipo:''),v,r:ru[k]||0,c:ru[k]?'var(--O)':'var(--N)',click:'abrirUnidad('+q(k)+')'};}),null,i=>i.v+(i.r?' <small>R'+i.r+'</small>':''))+
     '<p class="help">Naranja = con reincidencias. Candidatas a análisis de causa raíz / revisión del plan preventivo.</p>';
 
   const wk=[]; const lunes=new Date(HOY); lunes.setDate(lunes.getDate()-((lunes.getDay()+6)%7));
@@ -474,7 +474,7 @@ function renderReglas(){
   $('reglas').innerHTML='<div class="grid c2"><table class="rules"><tr><th>Factor (automático, sin carga manual)</th><th>Puntos</th></tr>'+
     fila('Sistema crítico / mayor / menor (por categoría o palabras clave)','3 / 2 / 1')+fila('Unidad en mantenimiento (Estado de Unidades)','4')+
     fila('Sistema con impacto en seguridad','4')+fila('Riesgo ambiental (cisterna/hidráulico o “pérdida/derrame/fuga”)','3')+fila('Prioridad alta cargada en el sistema','2')+
-    fila('Fuera de SLA','2')+fila('Antigüedad &gt; 7 días / &gt; 15 días','1 / 2')+fila('Abierta sin OT asignada','1')+fila('Reincidente (mismo interno + sistema ≤ '+CFG.REINC_DIAS+' d)','2')+'</table>'+
+    fila('Fuera de SLA','2')+fila('Antigüedad &gt; 7 días / &gt; 15 días','1 / 2')+fila('Abierta sin OT asignada','1')+fila('Reincidente (misma patente + sistema ≤ '+CFG.REINC_DIAS+' d)','2')+'</table>'+
     '<table class="rules"><tr><th>Nivel</th><th>Score · SLA de cierre</th></tr>'+
     NIVELES.map((l,i)=>'<tr><td>'+nv(l)+'</td><td>'+rng[i]+' · '+CFG.SLA_DIAS[l]+' día(s)</td></tr>').join('')+
     '<tr><td colspan="2" class="small"><b>Regla de bloqueo:</b> novedad en sistema de seguridad con la unidad operando → Crítica automática.</td></tr>'+
@@ -500,15 +500,15 @@ function renderFlota(){
     kpi('O','Espera repuesto / tercero',espera.length,'según estado de reparación')+
     kpi(riesgo.length?'R':'G','Operando con críticas',riesgo.length,'disponibles con novedad crítica abierta');
   const Ms=M.slice().sort((a,b)=>b._dias-a._dias);
-  $('fTabla').innerHTML=Ms.length?'<div class="only-desk"><div class="tscroll"><table class="t"><thead><tr><th>Interno</th><th>Patente</th><th>Tipo</th><th>Centro costos</th><th>Estado</th><th>Baja</th><th>Días</th><th>Comprometida</th><th>Categoría</th><th>Tipo mant.</th><th>Detalle</th><th>OT</th><th>Estado rep.</th><th>Demora</th><th>Nov. abiertas</th></tr></thead><tbody>'+
-    Ms.map(u=>{const pn=peorNivel(u._ab);return '<tr class="rw" onclick="abrirUnidad('+q(u.interno)+')"><td class="nw"><b>'+esc(u.interno)+'</b></td><td class="nw">'+esc(u.patente)+'</td><td>'+esc(u.tipo)+'</td><td>'+esc(u.un)+'</td><td>'+esc(u.estado)+'</td><td class="nw">'+fmt(u.fBaja)+'</td><td><b>'+u._dias+'</b></td><td class="nw">'+(u._comp?'<span class="chip r">'+fmt(u.fComprometida)+'</span>':fmt(u.fComprometida))+'</td><td>'+esc(u.categoria||'—')+'</td><td>'+esc(u.tipoMant||'—')+'</td><td>'+esc(u.detalle||'—')+'</td><td class="nw">'+esc(u.ot||'—')+'</td><td>'+esc(u.estadoRep||'—')+'</td><td>'+esc(u.demora||'—')+'</td><td class="nw">'+(u._ab.length?u._ab.length+' '+nv(pn):'<span class="muted">—</span>')+'</td></tr>';}).join('')+
-    '</tbody></table></div></div><div class="only-mob">'+Ms.map(u=>{const pn=peorNivel(u._ab);return '<div class="nc '+(pn||'')+'" onclick="abrirUnidad('+q(u.interno)+')"><div class="top"><span class="u">'+esc(u.interno)+'</span><span class="chip r">'+u._dias+' d</span></div><div class="small muted">'+esc([u.patente,u.tipo,u.un].join(' · '))+'</div><div class="d">'+esc([u.tipoMant,u.categoria,u.detalle].filter(Boolean).join(' · ')||'Sin detalle')+'</div><div>'+(u.estadoRep?'<span class="chip b">'+esc(u.estadoRep)+'</span>':'')+(u._comp?'<span class="chip r">Comprometida vencida '+fmt(u.fComprometida)+'</span>':u.fComprometida?'<span class="chip">Vuelve '+fmt(u.fComprometida)+'</span>':'')+(u._ab.length?'<span class="chip">'+u._ab.length+' nov. abiertas</span>':'')+'</div></div>';}).join('')+'</div>':'<div class="empty">Sin unidades en mantenimiento</div>';
+  $('fTabla').innerHTML=Ms.length?'<div class="only-desk"><div class="tscroll"><table class="t"><thead><tr><th>Patente</th><th>Interno</th><th>Tipo</th><th>Centro costos</th><th>Estado</th><th>Baja</th><th>Días</th><th>Comprometida</th><th>Categoría</th><th>Tipo mant.</th><th>Detalle</th><th>OT</th><th>Estado rep.</th><th>Demora</th><th>Nov. abiertas</th></tr></thead><tbody>'+
+    Ms.map(u=>{const pn=peorNivel(u._ab);return '<tr class="rw" onclick="abrirUnidad('+q(u.patente)+')"><td class="nw"><b>'+esc(u.patente)+'</b></td><td class="nw">'+esc(u.interno!==u.patente?u.interno:'—')+'</td><td>'+esc(u.tipo)+'</td><td>'+esc(u.un)+'</td><td>'+esc(u.estado)+'</td><td class="nw">'+fmt(u.fBaja)+'</td><td><b>'+u._dias+'</b></td><td class="nw">'+(u._comp?'<span class="chip r">'+fmt(u.fComprometida)+'</span>':fmt(u.fComprometida))+'</td><td>'+esc(u.categoria||'—')+'</td><td>'+esc(u.tipoMant||'—')+'</td><td>'+esc(u.detalle||'—')+'</td><td class="nw">'+esc(u.ot||'—')+'</td><td>'+esc(u.estadoRep||'—')+'</td><td>'+esc(u.demora||'—')+'</td><td class="nw">'+(u._ab.length?u._ab.length+' '+nv(pn):'<span class="muted">—</span>')+'</td></tr>';}).join('')+
+    '</tbody></table></div></div><div class="only-mob">'+Ms.map(u=>{const pn=peorNivel(u._ab);return '<div class="nc '+(pn||'')+'" onclick="abrirUnidad('+q(u.patente)+')"><div class="top"><span class="u">'+esc(u.patente)+'</span><span class="chip r">'+u._dias+' d</span></div><div class="small muted">'+esc([u.interno!==u.patente?u.interno:'',u.tipo,u.un].filter(Boolean).join(' · '))+'</div><div class="d">'+esc([u.tipoMant,u.categoria,u.detalle].filter(Boolean).join(' · ')||'Sin detalle')+'</div><div>'+(u.estadoRep?'<span class="chip b">'+esc(u.estadoRep)+'</span>':'')+(u._comp?'<span class="chip r">Comprometida vencida '+fmt(u.fComprometida)+'</span>':u.fComprometida?'<span class="chip">Vuelve '+fmt(u.fComprometida)+'</span>':'')+(u._ab.length?'<span class="chip">'+u._ab.length+' nov. abiertas</span>':'')+'</div></div>';}).join('')+'</div>':'<div class="empty">Sin unidades en mantenimiento</div>';
   const porUN={}; UE.forEach(u=>{const k=u.un||'Sin UN';porUN[k]=porUN[k]||{t:0,m:0};porUN[k].t++;if(u.enMant)porUN[k].m++;});
   $('fDispUN').innerHTML=bars(Object.entries(porUN).map(([k,o])=>{const d=1-o.m/o.t;return {l:k,v:Math.round(d*100),o,max:100,c:d>=.9?'var(--G)':d>=.8?'var(--A)':'var(--R)'};}).sort((a,b)=>a.v-b.v),null,i=>i.v+'% <small>'+i.o.m+'/'+i.o.t+'</small>');
   $('fCat').innerHTML=bars(Object.entries(contar(M,u=>u.categoria||'Sin categoría')).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({l:k,v})));
   $('fRep').innerHTML=bars(Object.entries(contar(M,u=>u.estadoRep||'Sin dato')).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({l:k,v,c:'var(--O)'})));
   $('fEstados').innerHTML=bars(Object.entries(contar(U,u=>u.estado||'Sin estado')).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({l:k,v,c:/DISPONIBLE|OPERATIV/.test(k)?'var(--G)':/SIN DATO/.test(k)?'var(--GT)':'var(--R)'})));
-  $('fRiesgo').innerHTML=riesgo.length?riesgo.map(x=>'<div class="nc Crítica" onclick="abrirUnidad('+q(x.u.interno)+')"><div class="top"><span class="u">'+esc(x.u.interno)+' <span class="muted small" style="font-weight:400">'+esc(x.u.patente+' · '+x.u.tipo+' · '+x.u.un)+'</span></span><span class="chip g">'+esc(x.u.estado)+'</span></div>'+x.ab.map(n=>'<div class="small">• <b>'+esc(n.sistema)+'</b>: '+esc(n.descripcion.slice(0,80))+' <span class="muted">('+n.dias+' d'+(n.ot?' · '+esc(n.ot):' · sin OT')+')</span></div>').join('')+'</div>').join(''):'<div class="empty">Ninguna unidad disponible con novedades críticas abiertas</div>';
+  $('fRiesgo').innerHTML=riesgo.length?riesgo.map(x=>'<div class="nc Crítica" onclick="abrirUnidad('+q(x.u.patente)+')"><div class="top"><span class="u">'+esc(x.u.patente)+' <span class="muted small" style="font-weight:400">'+esc([x.u.interno!==x.u.patente?x.u.interno:'',x.u.tipo,x.u.un].filter(Boolean).join(' · '))+'</span></span><span class="chip g">'+esc(x.u.estado)+'</span></div>'+x.ab.map(n=>'<div class="small">• <b>'+esc(n.sistema)+'</b>: '+esc(n.descripcion.slice(0,80))+' <span class="muted">('+n.dias+' d'+(n.ot?' · '+esc(n.ot):' · sin OT')+')</span></div>').join('')+'</div>').join(''):'<div class="empty">Ninguna unidad disponible con novedades críticas abiertas</div>';
 }
 
 /* ===================== LISTADO ===================== */
@@ -544,7 +544,7 @@ function abrir(id,push){
   CUR=id;
   $('detInfo').innerHTML='<div class="card nc '+(n.cerrada?'':n.nivel)+'" style="cursor:default">'+
     '<div class="top"><span>'+(n.cerrada?nv('Cerrada'):nv(n.nivel))+' <b>score '+n.score+'</b></span><span class="id">N° '+esc(n.id)+'</span></div>'+
-    '<div class="u" style="margin:4px 0">'+esc(n.interno)+(n.patente?' · '+esc(n.patente):'')+'</div>'+
+    '<div class="u" style="margin:4px 0">'+esc(n.patente)+(n.interno&&n.interno!==n.patente?' · <span class="muted">'+esc(n.interno)+'</span>':'')+'</div>'+
     '<div style="margin-bottom:10px">'+n.motivos.map(m=>'<span class="chip r">'+esc(m)+'</span>').join('')+'</div>'+
     '<div class="kv"><b>Novedad</b><span>'+esc(n.descripcion)+'</span><b>Categoría sistema</b><span>'+esc(n.categoria||'—')+'</span><b>Clasificación</b><span>'+esc(n.sistema)+' ('+esc(n.criticidadSistema)+')</span>'+
     '<b>Reportó</b><span>'+esc(n.reporta||'—')+' · '+fmt(n.fecha)+(n.odometro?' · '+esc(n.odometro)+' km':'')+'</span>'+
@@ -552,19 +552,20 @@ function abrir(id,push){
     '<b>SLA</b><span>'+n.sla+' d → '+fmt(n.fCompromiso)+(n.vencida?' <span class="chip r">FUERA DE SLA</span>':'')+(n.cerrada?(n.enPlazo===false?' <span class="chip r">cerró fuera de plazo</span>':n.enPlazo?' <span class="chip g">cerró en plazo</span>':''):'')+'</span>'+
     (n.cerrada?'<b>Cierre</b><span>'+fmt(n.fCierre)+'</span>':'')+
     '<b>Unidad</b><span>'+esc([n.tipoUnidad,n.marca,n.un||n.grupo,n.propiedad].filter(Boolean).join(' · ')||'—')+' · <b>'+esc(n.estadoUnidad)+'</b></span></div>'+
-    (n.vinculada?'<div style="margin-top:12px"><button class="btn lt" onclick="abrirUnidad('+q(n.interno)+')">Ver ficha de la unidad ›</button></div>':'<p class="help" style="color:var(--R)">El código "'+esc(n.codigoOrigen)+'" no existe en la flota de CloudFleet (BD-VEHICULOS) ni en Estado de Unidades.</p>')+
+    (n.vinculada?'<div style="margin-top:12px"><button class="btn lt" onclick="abrirUnidad('+q(n.patente)+')">Ver ficha de la unidad ›</button></div>':'<p class="help" style="color:var(--R)">El código "'+esc(n.codigoOrigen)+'" no existe en la flota de CloudFleet (BD-VEHICULOS) ni en Estado de Unidades.</p>')+
     '</div><p class="help">La novedad se gestiona en el sistema de mantenimiento; este tablero es de consulta y se actualiza solo.</p>';
   goTo('v-det',push);
 }
-function abrirUnidad(interno,push){
-  CUR=interno;
-  const u=UNI.find(x=>_key(x.interno)===_key(interno));
-  const nov=ISS.filter(n=>_key(n.interno)===_key(interno)&&!n.descartada);
+function abrirUnidad(cod,push){
+  CUR=cod;
+  const u=UNI.find(x=>_key(x.patente)===_key(cod))||UNI.find(x=>_key(x.interno)===_key(cod));
+  const pat=u?u.patente:cod;
+  const nov=ISS.filter(n=>_key(n.patente)===_key(pat)&&!n.descartada);
   const ab=nov.filter(n=>!n.cerrada).sort((a,b)=>b.score-a.score), ce=nov.filter(n=>n.cerrada).sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,15);
   const kv=u?'<div class="kv"><b>Patente</b><span>'+esc(u.patente)+'</span><b>Tipo</b><span>'+esc(u.tipo)+'</span><b>Marca / línea</b><span>'+esc([u.marca,u.linea].filter(Boolean).join(' ')||'—')+'</span><b>Centro de costos</b><span>'+esc(u.cc||'—')+'</span><b>Grupo</b><span>'+esc([u.grupo,u.propiedad].filter(Boolean).join(' · ')||'—')+'</span>'+
     '<b>Estado</b><span><b style="color:'+(u.enMant?'var(--R)':'var(--G)')+'">'+esc(u.estado)+'</b></span>'+
     (u.enMant?'<b>Baja / días</b><span>'+fmt(u.fBaja)+' · '+(u.diasMant||diasDesde(u.fBaja)||0)+' d</span><b>Comprometida</b><span>'+fmt(u.fComprometida)+'</span><b>Mantenimiento</b><span>'+esc([u.tipoMant,u.categoria,u.detalle].filter(Boolean).join(' · ')||'—')+'</span><b>Taller</b><span>'+esc([u.taller,u.nombreTaller].filter(Boolean).join(' · ')||'—')+'</span><b>OT</b><span>'+esc(u.ot||'—')+'</span><b>Estado rep.</b><span>'+esc(u.estadoRep||'—')+'</span><b>Demora</b><span>'+esc(u.demora||'—')+'</span><b>Motivo baja</b><span>'+esc(u.motivoBaja||'—')+'</span>':'')+'</div>':'<p class="muted">Unidad no encontrada en Estado de Unidades.</p>';
-  $('uniInfo').innerHTML='<div class="card"><div style="font-size:18px;font-weight:700;margin-bottom:8px">'+esc(interno)+'</div>'+kv+'</div>'+
+  $('uniInfo').innerHTML='<div class="card"><div style="font-size:18px;font-weight:700;margin-bottom:8px">'+esc(pat)+(u&&u.interno&&u.interno!==u.patente?' <span class="muted" style="font-size:14px;font-weight:400">· '+esc(u.interno)+'</span>':'')+'</div>'+kv+'</div>'+
     '<div class="card"><h3>Novedades abiertas ('+ab.length+')</h3>'+(ab.length?ab.map(card).join(''):'<div class="empty">Sin novedades abiertas</div>')+'</div>'+
     '<div class="card"><h3>Últimas cerradas</h3>'+(ce.length?ce.map(card).join(''):'<div class="empty">Sin historial cargado</div>')+'</div>';
   goTo('v-unidad',push);
@@ -574,7 +575,7 @@ function abrirUnidad(interno,push){
 function exportarCSV(){
   const F=filtrosDash(), K=calcular(F);
   const L=K.B.filter(n=>!n.cerrada||enRango(n.fecha,F)||enRango(n.fCierre,F)).sort((a,b)=>(a.cerrada-b.cerrada)||b.score-a.score);
-  const cols=['id','fecha','interno','patente','tipoUnidad','un','estadoUnidad','categoria','sistema','descripcion','estadoRaw','prioridad','ot','fCierre','nivel','score','dias','sla','fCompromiso','vencida','reincidente','impSeg','impAmb','motivos'];
+  const cols=['id','fecha','patente','interno','tipoUnidad','un','estadoUnidad','categoria','sistema','descripcion','estadoRaw','prioridad','ot','fCierre','nivel','score','dias','sla','fCompromiso','vencida','reincidente','impSeg','impAmb','motivos'];
   const csv='\ufeff'+cols.join(';')+'\n'+L.map(n=>cols.map(c=>'"'+String(Array.isArray(n[c])?n[c].join(', '):(n[c]==null?'':n[c])).replace(/"/g,'""').replace(/\n/g,' ')+'"').join(';')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='Novedades_Mantenimiento_'+_iso(HOY)+'.csv';a.click();
 }
@@ -618,16 +619,16 @@ function exportarPDF(){
   const ab=K.abiertas.slice().sort((a,b)=>b.score-a.score||b.dias-a.dias);
   doc.autoTable({startY:y+3,theme:'grid',headStyles:head,styles:{fontSize:7.5,cellPadding:1.5,overflow:'linebreak'},
     columnStyles:{0:{cellWidth:15},1:{cellWidth:11,halign:'center'},2:{cellWidth:14},3:{cellWidth:24},5:{cellWidth:70},8:{cellWidth:10,halign:'center'},9:{cellWidth:17}},
-    head:[['Nivel','Score','N°','Interno','Sistema','Novedad','Unidad','Estado','Días','SLA','OT','Motivos']],
-    body:ab.map(n=>[n.nivel,n.score,pdfTxt(n.id),pdfTxt(n.interno+' '+n.tipoUnidad),pdfTxt(n.sistema),pdfTxt(n.descripcion),n.condicion==='Fuera de servicio'?'En mant.':'Operando',pdfTxt(n.estadoRaw),n.dias,fmt(n.fCompromiso)+(n.vencida?' VENC':''),pdfTxt(n.ot||'Sin OT'),pdfTxt(n.motivos.join(', '))]),
+    head:[['Nivel','Score','N°','Patente','Sistema','Novedad','Unidad','Estado','Días','SLA','OT','Motivos']],
+    body:ab.map(n=>[n.nivel,n.score,pdfTxt(n.id),pdfTxt(n.patente+' '+n.tipoUnidad),pdfTxt(n.sistema),pdfTxt(n.descripcion),n.condicion==='Fuera de servicio'?'En mant.':'Operando',pdfTxt(n.estadoRaw),n.dias,fmt(n.fCompromiso)+(n.vencida?' VENC':''),pdfTxt(n.ot||'Sin OT'),pdfTxt(n.motivos.join(', '))]),
     didParseCell:d=>{if(d.section==='body'&&d.column.index===0&&COLN[d.cell.raw]){d.cell.styles.fillColor=rgb(COLN[d.cell.raw]);d.cell.styles.textColor=255;d.cell.styles.fontStyle='bold';}
       if(d.section==='body'&&d.column.index===9&&String(d.cell.raw).includes('VENC')){d.cell.styles.textColor=[192,0,0];d.cell.styles.fontStyle='bold';}}});
   const M=K.U.filter(u=>u.enMant).map(u=>Object.assign({},u,{_d:u.diasMant||diasDesde(u.fBaja)||0})).sort((a,b)=>b._d-a._d);
   if(M.length){
     doc.addPage();doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(26);doc.text(pdfTxt('Unidades en mantenimiento ('+M.length+') · Disponibilidad '+K.disp+'%'),14,16);
     doc.autoTable({startY:19,theme:'grid',headStyles:head,styles:{fontSize:7.5,cellPadding:1.5},
-      head:[['Interno','Patente','Tipo','Centro costos','Baja','Días','Comprometida','Categoría','Tipo mant.','OT','Estado rep.','Demora','Nov. abiertas']],
-      body:M.map(u=>[pdfTxt(u.interno),pdfTxt(u.patente),pdfTxt(u.tipo),pdfTxt(u.un),fmt(u.fBaja),u._d,fmt(u.fComprometida),pdfTxt(u.categoria),pdfTxt(u.tipoMant),pdfTxt(u.ot),pdfTxt(u.estadoRep),pdfTxt(u.demora),abiertasDe(u).length])});
+      head:[['Patente','Interno','Tipo','Centro costos','Baja','Días','Comprometida','Categoría','Tipo mant.','OT','Estado rep.','Demora','Nov. abiertas']],
+      body:M.map(u=>[pdfTxt(u.patente),pdfTxt(u.interno!==u.patente?u.interno:'-'),pdfTxt(u.tipo),pdfTxt(u.un),fmt(u.fBaja),u._d,fmt(u.fComprometida),pdfTxt(u.categoria),pdfTxt(u.tipoMant),pdfTxt(u.ot),pdfTxt(u.estadoRep),pdfTxt(u.demora),abiertasDe(u).length])});
   }
   const pg=doc.getNumberOfPages();
   for(let i=1;i<=pg;i++){doc.setPage(i);doc.setFontSize(7.5);doc.setTextColor(107,114,128);doc.setFont('helvetica','normal');
