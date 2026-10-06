@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Score de Mantenimiento · Griffouliere</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{--R:#C00000;--N:#1a1a1a;--BG:#f4f5f7;--BO:#e0e2e8;--GT:#6b7280;--G:#1D9E75;--A:#EF9F27;--O:#E07B39;--B:#378ADD;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Calibri,"Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,Arial,sans-serif;background:var(--BG);color:var(--N);font-size:14px;line-height:1.4}
+header{position:sticky;top:0;z-index:50;background:var(--N);height:52px;display:flex;align-items:center;gap:10px;padding:0 14px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.badge-emp{background:var(--R);color:#fff;font-weight:700;font-size:11px;letter-spacing:2px;padding:4px 8px;border-radius:2px}
+.h-title{color:#fff;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.h-btn{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:4px;padding:6px 11px;font-size:18px;cursor:pointer;line-height:1}
+.h-btn.sm{font-size:14px;padding:7px 10px}
+.h-upd{color:#9ca3af;font-size:11px;white-space:nowrap}
+@media(max-width:600px){.h-upd{display:none}}
+nav.tabs{position:sticky;top:52px;z-index:40;background:#fff;border-bottom:1px solid var(--BO);display:flex;justify-content:center}
+nav.tabs button{flex:0 1 180px;background:none;border:0;border-bottom:3px solid transparent;padding:12px 8px;font:inherit;font-weight:600;color:var(--GT);cursor:pointer}
+nav.tabs button.on{color:var(--N);border-bottom-color:var(--R)}
+main{max-width:520px;margin:0 auto;padding:14px}
+main.wide{max-width:1320px}
+.view{display:none}.view.on{display:block}
+.demo{background:#fff7e6;border:1px solid var(--A);color:#7a4b00;border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:13px}
+.warn{background:#fdecec;border:1px solid var(--R);color:#7a0000;border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:13px}
+.card{background:#fff;border:1px solid var(--BO);border-radius:8px;padding:14px;margin-bottom:12px}
+.card h3{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--GT);margin-bottom:10px;font-weight:700}
+.card h3 small{text-transform:none;letter-spacing:0;font-weight:400}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;align-items:end}
+.filters label{font-size:11px;color:var(--GT);font-weight:600;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px}
+input,select{width:100%;font:inherit;font-size:14px;padding:7px 8px;border:1px solid var(--BO);border-radius:6px;background:#fff;color:var(--N)}
+.help{font-size:11.5px;color:var(--GT);margin-top:4px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:6px;padding:9px 14px;font:inherit;font-weight:700;cursor:pointer;background:var(--N);color:#fff}
+.btn.r{background:var(--R)}.btn.lt{background:#fff;color:var(--N);border:1px solid var(--BO)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;margin-bottom:12px}
+.kpi{background:#fff;border:1px solid var(--BO);border-left:5px solid var(--N);border-radius:8px;padding:11px 12px}
+.kpi.click{cursor:pointer}.kpi.click:hover{box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.kpi .l{font-size:11px;color:var(--GT);text-transform:uppercase;font-weight:700;letter-spacing:.4px}
+.kpi .v{font-size:25px;font-weight:700;line-height:1.15;margin-top:2px;white-space:nowrap}
+.kpi .s{font-size:11.5px;color:var(--GT)}
+.kpi.R{border-left-color:var(--R)}.kpi.R .v{color:var(--R)}
+.kpi.A{border-left-color:var(--A)}.kpi.G{border-left-color:var(--G)}.kpi.O{border-left-color:var(--O)}.kpi.B{border-left-color:var(--B)}
+.grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px}
+@media(min-width:900px){.grid.c2{grid-template-columns:1fr 1fr}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+.grid .card{margin-bottom:0}
+.bar-item{display:grid;grid-template-columns:minmax(90px,38%) 1fr 70px;gap:8px;align-items:center;margin-bottom:6px;font-size:12.5px}
+.bar-item .lb{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{background:#eef0f4;border-radius:3px;height:14px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;background:var(--N)}
+.bar-item .vl{text-align:right;font-weight:700;font-size:12px}
+.bar-item .vl small{color:var(--GT);font-weight:400}
+.pie-wrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.pie{width:140px;height:140px;border-radius:50%;position:relative;flex:none}
+.pie::after{content:"";position:absolute;inset:30px;background:#fff;border-radius:50%}
+.pie span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:1;font-weight:700;font-size:24px}
+.pie span small{font-size:10px;color:var(--GT);font-weight:600}
+.legend div{display:flex;align-items:center;gap:7px;font-size:13px;margin-bottom:5px}
+.legend i{width:11px;height:11px;border-radius:2px;display:inline-block}
+.nv{display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:700;color:#fff;white-space:nowrap}
+.nv.Crítica{background:var(--R)}.nv.Alta{background:var(--O)}.nv.Media{background:var(--A)}.nv.Baja{background:var(--G)}.nv.Cerrada{background:var(--GT)}
+.chip{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;background:#eef0f4;color:var(--N);margin:2px 3px 0 0;white-space:nowrap}
+.chip.r{background:#fde8e8;color:var(--R);font-weight:700}.chip.a{background:#fff3e0;color:#9a5b00}.chip.b{background:#e8f1fc;color:#1d5fa8}.chip.g{background:#e3f5ee;color:#0f6b4f}
+table.t{width:100%;border-collapse:collapse;font-size:12.5px}
+table.t th{background:var(--N);color:#fff;text-align:left;padding:7px 8px;font-weight:600;font-size:11.5px;position:sticky;top:0;white-space:nowrap}
+table.t td{padding:7px 8px;border-bottom:1px solid var(--BO);vertical-align:top}
+table.t td.nw{white-space:nowrap}
+table.t tr.rw{cursor:pointer}table.t tr.rw:hover td{background:#fafbfc}
+table.t tr.venc td:first-child{box-shadow:inset 3px 0 0 var(--R)}
+.tscroll{overflow:auto;max-height:70vh;border:1px solid var(--BO);border-radius:6px}
+.only-desk{display:none}.only-mob{display:block}
+@media(min-width:900px){.only-desk{display:block}.only-mob{display:none}}
+.nc{background:#fff;border:1px solid var(--BO);border-left:5px solid var(--GT);border-radius:8px;padding:11px 12px;margin-bottom:9px;cursor:pointer}
+.nc.Crítica{border-left-color:var(--R)}.nc.Alta{border-left-color:var(--O)}.nc.Media{border-left-color:var(--A)}.nc.Baja{border-left-color:var(--G)}
+.nc .top{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px}
+.nc .id{font-size:11.5px;color:var(--GT)}
+.nc .u{font-weight:700;font-size:15px}.nc .d{font-size:13px;color:#333;margin:3px 0}
+.muted{color:var(--GT)}.small{font-size:12px}
+.kv{display:grid;grid-template-columns:130px 1fr;gap:4px 10px;font-size:13.5px}.kv b{color:var(--GT);font-weight:600}
+.trend{display:flex;align-items:flex-end;gap:6px;height:150px;padding-top:6px}
+.trend .w{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end}
+.trend .p{display:flex;gap:2px;align-items:flex-end;height:120px;width:100%;justify-content:center}
+.trend .p div{width:42%;border-radius:2px 2px 0 0;min-height:1px}
+.trend .w small{font-size:10px;color:var(--GT)}
+.rules{font-size:12.5px;width:100%;border-collapse:collapse}.rules td,.rules th{padding:4px 8px;border-bottom:1px solid var(--BO);text-align:left}
+details summary{cursor:pointer;font-weight:700;font-size:13px}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--N);color:#fff;padding:11px 18px;border-radius:6px;font-weight:600;z-index:99;display:none;max-width:90vw}
+#toast.err{background:var(--R)}#toast.ok{background:var(--G)}
+#loader{position:fixed;inset:0;background:rgba(244,245,247,.8);display:none;align-items:center;justify-content:center;z-index:98;font-weight:700}
+.empty{padding:20px;text-align:center;color:var(--GT)}
+</style>
+</head>
+<body>
+<header>
+  <button class="h-btn" id="btnBack" style="display:none" onclick="volver()">‹</button>
+  <span class="badge-emp">GRIFFOULIERE</span>
+  <span class="h-title" id="hTitle">Score de Mantenimiento</span>
+  <span class="h-upd" id="hUpd"></span>
+  <button class="h-btn sm" onclick="cargar(true)" title="Actualizar datos">⟳</button>
+</header>
+<nav class="tabs">
+  <button data-v="v-dash" onclick="goTo('v-dash')">Novedades</button>
+  <button data-v="v-flota" onclick="goTo('v-flota')">Estado de flota</button>
+  <button data-v="v-lista" onclick="goTo('v-lista')">Listado</button>
+</nav>
+
+<!-- ======================= TABLERO NOVEDADES ======================= -->
+<main class="wide view" id="v-dash">
+  <div id="demoBanner" class="demo" style="display:none">Modo DEMO: datos de ejemplo. Para conectar, pegar la URL /exec del Apps Script en la constante <b>API_URL</b>.</div>
+  <div id="diagBanner" class="warn" style="display:none"></div>
+  <div class="card">
+    <div class="filters">
+      <div><label>Desde</label><input type="date" id="fDesde" onchange="renderDash()"></div>
+      <div><label>Hasta</label><input type="date" id="fHasta" onchange="renderDash()"></div>
+      <div><label>Unidad de negocio</label><select id="fUN" onchange="renderDash()"></select></div>
+      <div><label>Tipo de unidad</label><select id="fTipo" onchange="renderDash()"></select></div>
+      <div><label>Sistema</label><select id="fSistema" onchange="renderDash()"></select></div>
+      <div class="btnrow"><button class="btn r" onclick="exportarPDF()">PDF</button><button class="btn lt" onclick="exportarCSV()">CSV</button></div>
+    </div>
+    <p class="help" id="dashNota"></p>
+  </div>
+  <div class="kpis" id="kpis"></div>
+  <div class="card">
+    <h3>Prioridad de atención · Top 10 novedades abiertas <small>(ordenadas por criticidad)</small></h3>
+    <div id="topCrit"></div>
+  </div>
+  <div class="grid c3">
+    <div class="card"><h3>Abiertas por criticidad</h3><div id="chPie"></div></div>
+    <div class="card"><h3>Abiertas por estado <small>(sistema)</small></h3><div id="chEstado"></div></div>
+    <div class="card"><h3>Antigüedad de abiertas</h3><div id="chAging"></div></div>
+  </div>
+  <div class="grid c2">
+    <div class="card"><h3>Pareto por sistema <small>(reportadas en período · % acumulado)</small></h3><div id="chPareto"></div></div>
+    <div class="card"><h3>Unidades con más novedades <small>(período)</small></h3><div id="chUnidades"></div></div>
+  </div>
+  <div class="grid c3">
+    <div class="card"><h3>Tendencia semanal <small>(12 semanas)</small></h3><div id="chTrend"></div>
+      <div class="legend" style="display:flex;gap:14px;margin-top:6px"><div><i style="background:var(--R)"></i>Reportadas</div><div><i style="background:var(--G)"></i>Cerradas</div></div></div>
+    <div class="card"><h3>Por unidad de negocio <small>(abiertas / período)</small></h3><div id="chUN"></div></div>
+    <div class="card"><h3>Calidad del dato</h3><div id="chCalidad"></div></div>
+  </div>
+  <div class="card">
+    <details>
+      <summary>Criterio de criticidad (matriz de scoring)</summary>
+      <div style="margin-top:10px" id="reglas"></div>
+    </details>
+  </div>
+</main>
+
+<!-- ======================= ESTADO DE FLOTA ======================= -->
+<main class="wide view" id="v-flota">
+  <div class="card">
+    <div class="filters">
+      <div><label>Unidad de negocio</label><select id="uUN" onchange="renderFlota()"></select></div>
+      <div><label>Tipo de unidad</label><select id="uTipo" onchange="renderFlota()"></select></div>
+      <div><label>Taller</label><select id="uTaller" onchange="renderFlota()"></select></div>
+      <div style="grid-column:span 2"><label>Buscar</label><input id="uQ" placeholder="Interno, patente, OT, detalle…" oninput="renderFlota()"></div>
+    </div>
+    <p class="help">Fuente: "Estado de Unidades General". Una unidad cuenta como <b>en mantenimiento</b> cuando su ESTADO no es DISPONIBLE / OPERATIVA.</p>
+  </div>
+  <div class="kpis" id="fkpis"></div>
+  <div class="card">
+    <h3>Unidades en mantenimiento <small>(ordenadas por días fuera de servicio · cruzadas con novedades abiertas)</small></h3>
+    <div id="fTabla"></div>
+  </div>
+  <div class="grid c3">
+    <div class="card"><h3>Disponibilidad por unidad de negocio</h3><div id="fDispUN"></div></div>
+    <div class="card"><h3>En mantenimiento por categoría</h3><div id="fCat"></div></div>
+    <div class="card"><h3>Estado de reparación</h3><div id="fRep"></div></div>
+  </div>
+  <div class="grid c2">
+    <div class="card"><h3>Distribución de estados</h3><div id="fEstados"></div></div>
+    <div class="card"><h3>Disponibles con novedad crítica abierta <small>(operando con riesgo)</small></h3><div id="fRiesgo" style="max-height:520px;overflow:auto"></div></div>
+  </div>
+</main>
+
+<!-- ======================= LISTADO ======================= -->
+<main class="wide view" id="v-lista">
+  <div class="card">
+    <div class="filters">
+      <div style="grid-column:span 2"><label>Buscar</label><input id="lQ" placeholder="Interno, patente, N°, descripción, OT…" oninput="renderLista()"></div>
+      <div><label>Estado</label><select id="lEstado" onchange="renderLista()"></select></div>
+      <div><label>Criticidad</label><select id="lNivel" onchange="renderLista()"><option value="">Todas</option><option>Crítica</option><option>Alta</option><option>Media</option><option>Baja</option></select></div>
+      <div><label>Unidad de negocio</label><select id="lUN" onchange="renderLista()"></select></div>
+      <div><label>Sistema</label><select id="lSis" onchange="renderLista()"></select></div>
+      <div><label>Solo</label><select id="lSolo" onchange="renderLista()"><option value="">—</option><option value="venc">Fuera de SLA</option><option value="fs">Unidad en mantenimiento</option><option value="seg">Impacto seguridad</option><option value="reinc">Reincidentes</option><option value="sinot">Sin OT</option><option value="sinv">Sin vincular a unidad</option></select></div>
+      <div><label>Orden</label><select id="lOrden" onchange="renderLista()"><option value="score">Criticidad</option><option value="dias">Antigüedad</option><option value="fecha">Más recientes</option></select></div>
+    </div>
+    <p class="help" id="lCount"></p>
+  </div>
+  <div class="only-mob" id="lCards"></div>
+  <div class="only-desk card" style="padding:0"><div class="tscroll" id="lTabla"></div></div>
+</main>
+
+<main class="view" id="v-det"><div id="detInfo"></div></main>
+<main class="view" id="v-unidad"><div id="uniInfo"></div></main>
+
+<div id="toast"></div><div id="loader">Cargando datos de CloudFleet y Estado de Unidades…</div>
+<canvas id="cvPie" width="400" height="400" style="display:none"></canvas>
+
+<script>
+/* ===================== CONFIGURACIÓN ===================== */
+const API_URL = 'https://script.google.com/macros/s/AKfycbzEaB2wwvbxv5gDCGrYzAwgIq6xacye-0fiqkhZnj2k-57j1ug_W2Zv86-6G0i41lvkjw/exec';   // API Score de Mantenimiento
+const DEMO = !API_URL;
+
+/* ======= LÓGICA DE CRITICIDAD (idéntica a Code.gs) ======= */
+const CFG = {
+  PESO_SISTEMA:{'Crítico':3,'Mayor':2,'Menor':1},
+  PESO_COND:{'Fuera de servicio':4,'Operativa con restricción':2,'Operativa':0},
+  IMP_SEG:4, IMP_AMB:3, VENCIDA:2, REINC:2, REINC_DIAS:30, PRIO_ALTA:2, SIN_OT:1,
+  AGING:[{dias:15,pts:2},{dias:7,pts:1}],
+  UMBRAL:{CRITICA:9,ALTA:6,MEDIA:3},
+  SLA_DIAS:{'Crítica':1,'Alta':3,'Media':7,'Baja':15}
+};
+function _d(iso){ if(!iso) return null; const p=String(iso).split('-'); return new Date(+p[0],+p[1]-1,+p[2]); }
+function _iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function _norm(s){ return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
+function _key(s){ return String(s==null?'':s).toUpperCase().replace(/[^A-Z0-9]/g,''); }
+function clasificar(n,sistemas){
+  const cat=_norm(n.categoria), txt=_norm(n.categoria+' '+n.descripcion);
+  let s=sistemas.find(x=>cat&&(_norm(x.sistema)===cat||x.claves.some(k=>cat===k)));
+  if(!s) s=sistemas.find(x=>x.claves.some(k=>k&&(' '+txt+' ').indexOf(' '+k)>=0));
+  return s||sistemas.find(x=>x.sistema==='Otros')||{sistema:'Otros',criticidad:'Menor',seguridad:'No',ambiental:'No'};
+}
+function calcularCriticidad(n,hoy){
+  const cerrada=n.cerrada;
+  const f=_d(n.fecha)||hoy;
+  const fin=cerrada&&n.fCierre?_d(n.fCierre):hoy;
+  const dias=Math.max(0,Math.round((fin-f)/864e5));
+  let s=0;const m=[];
+  s+=CFG.PESO_SISTEMA[n.criticidadSistema]||1; if(n.criticidadSistema==='Crítico') m.push('Sistema crítico');
+  const pc=CFG.PESO_COND[n.condicion]||0; s+=pc;
+  if(n.condicion==='Fuera de servicio') m.push('Unidad en mantenimiento'); else if(pc) m.push('Opera con restricción');
+  if(n.impSeg==='Sí'){s+=CFG.IMP_SEG;m.push('Impacto seguridad');}
+  if(n.impAmb==='Sí'){s+=CFG.IMP_AMB;m.push('Riesgo ambiental');}
+  if(/alta|urgent|critic|high/i.test(n.prioridad||'')){s+=CFG.PRIO_ALTA;m.push('Prioridad alta en sistema');}
+  const base=s;
+  const nivelBase=base>=CFG.UMBRAL.CRITICA?'Crítica':base>=CFG.UMBRAL.ALTA?'Alta':base>=CFG.UMBRAL.MEDIA?'Media':'Baja';
+  const sla=CFG.SLA_DIAS[nivelBase];
+  const fComp=new Date(f); fComp.setDate(fComp.getDate()+sla);
+  const vencida=!cerrada&&fComp<hoy;
+  if(!cerrada){
+    if(vencida){s+=CFG.VENCIDA;m.push('Fuera de SLA ('+sla+' d)');}
+    for(const a of CFG.AGING){ if(dias>a.dias){s+=a.pts;m.push('Antigüedad '+dias+' d');break;} }
+    if(!n.ot){s+=CFG.SIN_OT;m.push('Sin OT asignada');}
+  }
+  if(n.reincidente){s+=CFG.REINC;m.push('Reincidente');}
+  let nivel=s>=CFG.UMBRAL.CRITICA?'Crítica':s>=CFG.UMBRAL.ALTA?'Alta':s>=CFG.UMBRAL.MEDIA?'Media':'Baja';
+  if(n.impSeg==='Sí'&&n.condicion!=='Fuera de servicio'&&!cerrada&&nivel!=='Crítica'){nivel='Crítica';m.unshift('Regla: seguridad + unidad operando');}
+  const enPlazo=cerrada&&n.fCierre?_d(n.fCierre)<=fComp:null;
+  return {score:s,nivel,motivos:m,dias,vencida,fCompromiso:_iso(fComp),sla,enPlazo};
+}
+function enriquecer(issues,unidades,sistemas,hoy){
+  const idxU={};
+  unidades.forEach(u=>{if(u.interno) idxU[_key(u.interno)]=u; if(u.patente) idxU[_key(u.patente)]=u;});
+  issues.forEach(n=>{
+    const u=idxU[_key(n.interno)]||idxU[_key(n.patente)]||null;
+    n.tipoUnidad=u?u.tipo:''; n.un=u?u.un:''; n.cc=u?u.cc:'';
+    n.estadoUnidad=u?u.estado:'Sin vincular';
+    if(u&&!n.patente) n.patente=u.patente;
+    if(u&&u.interno) n.interno=u.interno;
+    n.vinculada=!!u;
+    n.condicion=u&&u.enMant?'Fuera de servicio':'Operativa';
+    const s=clasificar(n,sistemas);
+    n.sistema=s.sistema; n.criticidadSistema=s.criticidad;
+    n.impSeg=s.seguridad==='Sí'?'Sí':'No';
+    n.impAmb=(s.ambiental==='Sí'||/derram|fuga|perdida de (aceite|gasoil|combustible|producto|fluido|liquido)|goteo/.test(_norm(n.descripcion)))?'Sí':'No';
+  });
+  const grupos={};
+  issues.forEach(n=>{const k=_key(n.interno)+'|'+n.sistema;(grupos[k]=grupos[k]||[]).push(n);});
+  issues.forEach(n=>{
+    const f=_d(n.fecha);
+    n.reincidente=grupos[_key(n.interno)+'|'+n.sistema].some(o=>{
+      if(o===n||o.descartada) return false;
+      const dd=Math.round((f-_d(o.fecha))/864e5);
+      return (dd>0&&dd<=CFG.REINC_DIAS)||(dd===0&&String(o.id)<String(n.id));
+    });
+    Object.assign(n,calcularCriticidad(n,hoy));
+  });
+  return issues;
+}
+
+/* ===================== ESTADO GLOBAL ===================== */
+let ISS=[], UNI=[], SIS=[], HOY=null, DIAG=null, CUR=null, HIST=[];
+const NIVELES=['Crítica','Alta','Media','Baja'];
+const NORD={'Crítica':0,'Alta':1,'Media':2,'Baja':3};
+const COLN={'Crítica':'#C00000','Alta':'#E07B39','Media':'#EF9F27','Baja':'#1D9E75'};
+const TITULOS={'v-dash':'Score de Mantenimiento · Novedades','v-flota':'Score de Mantenimiento · Estado de flota','v-lista':'Novedades · Listado','v-det':'Detalle de novedad','v-unidad':'Ficha de unidad'};
+
+/* ===================== UTILIDADES ===================== */
+const $=id=>document.getElementById(id);
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function fmt(iso){ if(!iso) return '—'; const p=iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0].slice(2); }
+function mostrarToast(msg,tipo){const t=$('toast');t.textContent=msg;t.className=tipo||'';t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',3500);}
+function loader(on){$('loader').style.display=on?'flex':'none';}
+function opts(sel,arr,todas){ const v=$(sel).value; $(sel).innerHTML=(todas!==undefined?'<option value="">'+todas+'</option>':'')+arr.map(x=>'<option>'+esc(x)+'</option>').join(''); if(arr.includes(v)) $(sel).value=v; }
+function uniq(a){return [...new Set(a.filter(Boolean))].sort((x,y)=>String(x).localeCompare(String(y),'es',{numeric:true}));}
+function pct(a,b){return b?Math.round(a*100/b):0;}
+function nv(n){return '<span class="nv '+n+'">'+n+'</span>';}
+function contar(arr,key){const m={};arr.forEach(n=>{const k=typeof key==='function'?key(n):n[key];if(k!==undefined&&k!=='')m[k]=(m[k]||0)+1;});return m;}
+function q(s){return esc("'"+String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'")+"'");}
+function diasDesde(iso){return iso?Math.round((HOY-_d(iso))/864e5):null;}
+function vivas(){return ISS.filter(n=>!n.descartada);}
+function abiertasDe(u){return ISS.filter(n=>!n.cerrada&&_key(n.interno)===_key(u.interno));}
+function peorNivel(arr){return arr.length?arr.slice().sort((a,b)=>NORD[a.nivel]-NORD[b.nivel])[0].nivel:null;}
+
+function goTo(v,push){
+  const cur=document.querySelector('.view.on');
+  if(push!==false&&cur&&cur.id!==v&&(v==='v-det'||v==='v-unidad')) HIST.push({v:cur.id,id:CUR});
+  if(v!=='v-det'&&v!=='v-unidad') HIST=[];
+  document.querySelectorAll('.view').forEach(x=>x.classList.toggle('on',x.id===v));
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  $('hTitle').textContent=TITULOS[v];
+  $('btnBack').style.display=(v==='v-det'||v==='v-unidad')?'inline-block':'none';
+  if(v==='v-dash') renderDash(); if(v==='v-lista') renderLista(); if(v==='v-flota') renderFlota();
+  window.scrollTo(0,0);
+}
+function volver(){const p=HIST.pop()||{v:'v-dash'}; if(p.v==='v-det'&&p.id) abrir(p.id,false); else if(p.v==='v-unidad'&&p.id) abrirUnidad(p.id,false); else goTo(p.v,false);}
+
+/* ===================== API ===================== */
+async function api(action){
+  if(DEMO) return demoApi(action);
+  const r=await fetch(API_URL+'?'+new URLSearchParams({action}).toString());
+  const txt=await r.text(); let j;
+  try{ j=JSON.parse(txt); }catch(e){ throw new Error('La API no devolvió datos válidos. Revisar que la implementación tenga acceso "Cualquier usuario" y esté en su última versión.'); }
+  if(!j.ok) throw new Error(j.error||'Error del servidor');
+  return j;
+}
+async function cargar(forzar){
+  loader(true);
+  try{
+    const r=await api('datos');
+    ISS=r.issues; UNI=r.unidades; HOY=_d(r.hoy); DIAG=r.diag||{}; SIS=r.sistemas;
+    poblarFiltros();
+    $('hUpd').textContent='Datos '+r.generado+(DIAG.ultimaSync?' · Sync CloudFleet '+DIAG.ultimaSync:'');
+    const d=[];
+    if(DIAG.sinVincular) d.push(DIAG.sinVincular+' novedades no se pudieron vincular a una unidad de "Estado de Unidades" (revisar formato de interno/patente).');
+    if(DIAG.columnasNoEncontradas&&DIAG.columnasNoEncontradas.length) d.push('Columnas de ISSUE no reconocidas: '+DIAG.columnasNoEncontradas.join(', ')+' (ver ?action=mapeo).');
+    $('diagBanner').style.display=d.length?'block':'none'; $('diagBanner').innerHTML=d.map(esc).join('<br>');
+    if(forzar) mostrarToast('Datos actualizados','ok');
+    const v=document.querySelector('.view.on'); goTo(v?v.id:'v-dash',false);
+  }catch(e){ mostrarToast('Error: '+e.message,'err'); }
+  loader(false);
+}
+function poblarFiltros(){
+  const uns=uniq(UNI.map(u=>u.un)), tipos=uniq(UNI.map(u=>u.tipo)), sis=SIS.map(s=>s.sistema);
+  opts('fUN',uns,'Todas');opts('fTipo',tipos,'Todos');opts('fSistema',sis,'Todos');
+  opts('uUN',uns,'Todas');opts('uTipo',tipos,'Todos');opts('uTaller',uniq(UNI.map(u=>u.taller)),'Todos');
+  opts('lUN',uns,'Todas');opts('lSis',sis,'Todos');
+  const ests=uniq(ISS.map(n=>n.estadoRaw)), lv=$('lEstado').value;
+  $('lEstado').innerHTML='<option value="abiertas">Abiertas (todas)</option><option value="">Todos</option>'+ests.map(e=>'<option>'+esc(e)+'</option>').join('');
+  if(lv) $('lEstado').value=lv;
+  renderReglas();
+}
+
+/* ===================== CÁLCULOS ===================== */
+function filtrosDash(){return {desde:$('fDesde').value,hasta:$('fHasta').value,un:$('fUN').value,tipo:$('fTipo').value,sistema:$('fSistema').value};}
+function enRango(iso,F){return iso&&(!F.desde||iso>=F.desde)&&(!F.hasta||iso<=F.hasta);}
+function calcular(F){
+  const B=vivas().filter(n=>(!F.un||n.un===F.un)&&(!F.tipo||n.tipoUnidad===F.tipo)&&(!F.sistema||n.sistema===F.sistema));
+  const U=UNI.filter(u=>(!F.un||u.un===F.un)&&(!F.tipo||u.tipo===F.tipo));
+  const abiertas=B.filter(n=>!n.cerrada), periodo=B.filter(n=>enRango(n.fecha,F)), cerradasP=B.filter(n=>n.cerrada&&enRango(n.fCierre,F));
+  const conPlazo=cerradasP.filter(n=>n.enPlazo!==null), mant=U.filter(u=>u.enMant);
+  return {B,U,abiertas,periodo,cerradasP,mant,
+    criticas:abiertas.filter(n=>n.nivel==='Crítica'),vencidas:abiertas.filter(n=>n.vencida),seg:abiertas.filter(n=>n.impSeg==='Sí'),
+    sinOT:abiertas.filter(n=>!n.ot),reinc:periodo.filter(n=>n.reincidente),
+    mttr:cerradasP.length?cerradasP.reduce((a,n)=>a+n.dias,0)/cerradasP.length:0,
+    enPlazo:pct(conPlazo.filter(n=>n.enPlazo).length,conPlazo.length),nPlazo:conPlazo.length,
+    edadProm:abiertas.length?abiertas.reduce((a,n)=>a+n.dias,0)/abiertas.length:0,
+    disp:U.length?Math.round((1-mant.length/U.length)*1000)/10:0};
+}
+
+/* ===================== COMPONENTES ===================== */
+function bars(items,color,fmtV){
+  if(!items.length) return '<div class="empty">Sin datos</div>';
+  const max=Math.max(1,...items.map(i=>i.max||i.v));
+  return items.map(i=>'<div class="bar-item" '+(i.click?'style="cursor:pointer" onclick="'+i.click+'"':'')+'><span class="lb" title="'+esc(i.l)+'">'+esc(i.l)+'</span><div class="bar-track"><div class="bar-fill" style="width:'+(i.v*100/(i.max||max))+'%;background:'+(i.c||color||'var(--N)')+'"></div></div><span class="vl">'+(fmtV?fmtV(i):i.v)+'</span></div>').join('');
+}
+function kpi(cls,l,v,s,click){return '<div class="kpi '+cls+(click?' click':'')+'" '+(click?'onclick="'+click+'"':'')+'><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="s">'+s+'</div></div>';}
+const HEAD_NOV='<tr><th>Nivel</th><th>Score</th><th>N°</th><th>Fecha</th><th>Interno</th><th>Sistema</th><th>Novedad</th><th>Unidad</th><th>Estado</th><th>Días</th><th>SLA</th><th>OT</th></tr>';
+function filaNov(n){
+  return '<tr class="rw'+(n.vencida?' venc':'')+'" onclick="abrir('+q(n.id)+')"><td>'+(n.cerrada?nv('Cerrada'):nv(n.nivel))+'</td><td><b>'+n.score+'</b></td><td class="nw">'+esc(n.id)+'</td><td class="nw">'+fmt(n.fecha)+'</td><td class="nw"><b>'+esc(n.interno)+'</b>'+(n.reincidente?' <span class="chip a">R</span>':'')+'<div class="muted small">'+esc(n.tipoUnidad||'sin vincular')+'</div></td><td>'+esc(n.sistema)+'</td><td>'+esc(n.descripcion.slice(0,90))+'</td><td>'+(n.condicion==='Fuera de servicio'?'<span class="chip r">En mant.</span>':'<span class="chip g">Operando</span>')+'</td><td>'+esc(n.estadoRaw)+'</td><td>'+n.dias+'</td><td class="nw">'+(n.vencida?'<span class="chip r">'+fmt(n.fCompromiso)+'</span>':fmt(n.fCompromiso))+'</td><td class="nw">'+(n.ot?esc(n.ot):(n.cerrada?'—':'<span class="chip a">Sin OT</span>'))+'</td></tr>';
+}
+function card(n){
+  return '<div class="nc '+(n.cerrada?'':n.nivel)+'" onclick="abrir('+q(n.id)+')"><div class="top"><span>'+(n.cerrada?nv('Cerrada'):nv(n.nivel))+' <span class="muted small">score '+n.score+'</span></span><span class="id">N° '+esc(n.id)+' · '+fmt(n.fecha)+'</span></div>'+
+    '<div class="u">'+esc(n.interno)+' <span class="muted small" style="font-weight:400">'+esc([n.patente,n.tipoUnidad,n.un].filter(Boolean).join(' · '))+'</span></div>'+
+    '<div><b>'+esc(n.sistema)+'</b></div><div class="d">'+esc(n.descripcion)+'</div>'+
+    '<div><span class="chip b">'+esc(n.estadoRaw)+'</span>'+(n.condicion==='Fuera de servicio'?'<span class="chip r">Unidad en mant.</span>':'')+'<span class="chip">'+n.dias+' d</span>'+
+    (n.vencida?'<span class="chip r">Fuera de SLA</span>':'')+(n.impSeg==='Sí'?'<span class="chip r">Seguridad</span>':'')+(n.impAmb==='Sí'?'<span class="chip a">Ambiental</span>':'')+
+    (n.reincidente?'<span class="chip a">Reincidente</span>':'')+(n.ot?'<span class="chip">'+esc(n.ot)+'</span>':(n.cerrada?'':'<span class="chip a">Sin OT</span>'))+'</div></div>';
+}
+
+/* ===================== TABLERO NOVEDADES ===================== */
+function renderDash(){
+  if(!HOY) return;
+  const F=filtrosDash(), K=calcular(F);
+  $('dashNota').textContent='Abiertas, críticas, SLA y sin OT = foto al '+fmt(_iso(HOY))+'. Reportadas, MTTR, plazo y Pareto = período '+fmt(F.desde)+' a '+fmt(F.hasta)+'. Novedades descartadas excluidas.';
+  $('kpis').innerHTML=
+    kpi('N','Abiertas',K.abiertas.length,'Edad prom. '+K.edadProm.toFixed(1)+' d',"irLista('abiertas')")+
+    kpi('R','Críticas abiertas',K.criticas.length,K.seg.length+' en sistemas de seguridad',"irLista('abiertas','Crítica')")+
+    kpi(K.vencidas.length?'R':'G','Fuera de SLA',K.vencidas.length,pct(K.vencidas.length,K.abiertas.length)+'% de abiertas',"irLista('abiertas','','venc')")+
+    kpi(K.sinOT.length?'O':'G','Sin OT',K.sinOT.length,'abiertas sin orden de trabajo',"irLista('abiertas','','sinot')")+
+    kpi('R','En mantenimiento',K.mant.length,'Disponibilidad '+K.disp+'% ('+K.U.length+' u.)',"goTo('v-flota')")+
+    kpi('B','Reportadas período',K.periodo.length,K.cerradasP.length+' cerradas en período')+
+    kpi(K.mttr>7?'A':'G','MTTR',K.mttr.toFixed(1)+' d','tiempo medio de cierre')+
+    kpi(K.enPlazo>=85?'G':K.enPlazo>=70?'A':'R','Cierre en SLA',K.nPlazo?K.enPlazo+'%':'—','meta ≥ 85% · n='+K.nPlazo)+
+    kpi(K.reinc.length?'O':'G','Reincidencias',K.reinc.length,pct(K.reinc.length,K.periodo.length)+'% · mismo interno+sistema ≤'+CFG.REINC_DIAS+' d',"irLista('','','reinc')");
+
+  const top=K.abiertas.slice().sort((a,b)=>b.score-a.score||b.dias-a.dias).slice(0,10);
+  $('topCrit').innerHTML=top.length?'<div class="only-desk"><table class="t"><thead>'+HEAD_NOV+'</thead><tbody>'+top.map(filaNov).join('')+'</tbody></table></div><div class="only-mob">'+top.map(card).join('')+'</div>':'<div class="empty">Sin novedades abiertas</div>';
+
+  const cn=contar(K.abiertas,'nivel'), tot=K.abiertas.length; let acc=0;
+  const grad=tot?NIVELES.map(l=>{const a=acc;acc+=(cn[l]||0)*360/tot;return COLN[l]+' '+a+'deg '+acc+'deg';}).join(','):'#eef0f4 0 360deg';
+  $('chPie').innerHTML='<div class="pie-wrap"><div class="pie" style="background:conic-gradient('+grad+')"><span>'+tot+'<small>ABIERTAS</small></span></div><div class="legend">'+NIVELES.map(l=>'<div style="cursor:pointer" onclick="irLista(\'abiertas\',\''+l+'\')"><i style="background:'+COLN[l]+'"></i>'+l+': <b>'+(cn[l]||0)+'</b> <span class="muted">('+pct(cn[l]||0,tot)+'%)</span></div>').join('')+'</div></div>';
+  $('chEstado').innerHTML=bars(Object.entries(contar(K.abiertas,'estadoRaw')).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({l:k,v,c:'var(--B)',click:'irLista('+q(k)+')'})));
+  const bk=[['0–3 días',0,3,'var(--G)'],['4–7 días',4,7,'var(--A)'],['8–15 días',8,15,'var(--O)'],['> 15 días',16,1e9,'var(--R)']];
+  $('chAging').innerHTML=bars(bk.map(b=>({l:b[0],v:K.abiertas.filter(n=>n.dias>=b[1]&&n.dias<=b[2]).length,c:b[3]})));
+
+  const crit={}; SIS.forEach(s=>crit[s.sistema]=s.criticidad);
+  const ps=Object.entries(contar(K.periodo,'sistema')).sort((a,b)=>b[1]-a[1]); let cum=0;
+  $('chPareto').innerHTML=bars(ps.slice(0,12).map(([k,v])=>{cum+=v;return {l:k,v,ac:pct(cum,K.periodo.length),c:crit[k]==='Crítico'?'var(--R)':crit[k]==='Mayor'?'var(--N)':'var(--GT)'};}),null,i=>i.v+' <small>'+i.ac+'%</small>')+
+    '<p class="help">Rojo = sistema crítico · Negro = mayor · Gris = menor. Atacar primero hasta el 80% acumulado.</p>';
+  const cu=contar(K.periodo,'interno'), ru=contar(K.periodo.filter(n=>n.reincidente),'interno');
+  $('chUnidades').innerHTML=bars(Object.entries(cu).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>{const u=UNI.find(x=>x.interno===k);return {l:k+(u?' · '+u.tipo:''),v,r:ru[k]||0,c:ru[k]?'var(--O)':'var(--N)',click:'abrirUnidad('+q(k)+')'};}),null,i=>i.v+(i.r?' <small>R'+i.r+'</small>':''))+
+    '<p class="help">Naranja = con reincidencias. Candidatas a análisis de causa raíz / revisión del plan preventivo.</p>';
+
+  const wk=[]; const lunes=new Date(HOY); lunes.setDate(lunes.getDate()-((lunes.getDay()+6)%7));
+  for(let i=11;i>=0;i--){const d=new Date(lunes);d.setDate(d.getDate()-7*i);const h=new Date(d);h.setDate(h.getDate()+6);wk.push([_iso(d),_iso(h)]);}
+  const tw=wk.map(([a,b])=>({a,r:K.B.filter(n=>n.fecha>=a&&n.fecha<=b).length,c:K.B.filter(n=>n.cerrada&&n.fCierre>=a&&n.fCierre<=b).length}));
+  const mx=Math.max(1,...tw.map(t=>Math.max(t.r,t.c)));
+  $('chTrend').innerHTML='<div class="trend">'+tw.map(t=>'<div class="w" title="Semana '+fmt(t.a)+': '+t.r+' reportadas / '+t.c+' cerradas"><div class="p"><div style="height:'+(t.r*100/mx)+'%;background:var(--R)"></div><div style="height:'+(t.c*100/mx)+'%;background:var(--G)"></div></div><small>'+t.a.slice(8)+'/'+t.a.slice(5,7)+'</small></div>').join('')+'</div>';
+
+  const ba=contar(K.abiertas,n=>n.un||'Sin vincular'), bp=contar(K.periodo,n=>n.un||'Sin vincular');
+  $('chUN').innerHTML=bars(uniq([...Object.keys(ba),...Object.keys(bp)]).map(k=>({l:k,v:ba[k]||0,p:bp[k]||0})).sort((a,b)=>b.v-a.v),'var(--B)',i=>i.v+' <small>/ '+i.p+'</small>');
+  const sinV=K.abiertas.filter(n=>!n.vinculada).length, otros=K.periodo.filter(n=>n.sistema==='Otros').length, sinCierre=K.B.filter(n=>n.cerrada&&!n.fCierre).length;
+  $('chCalidad').innerHTML=bars([
+    {l:'Abiertas sin OT',v:K.sinOT.length,max:Math.max(1,K.abiertas.length),c:'var(--O)',click:"irLista('abiertas','','sinot')"},
+    {l:'Sin vincular a unidad',v:sinV,max:Math.max(1,K.abiertas.length),c:'var(--R)',click:"irLista('','','sinv')"},
+    {l:'Sistema sin clasificar',v:otros,max:Math.max(1,K.periodo.length),c:'var(--GT)'},
+    {l:'Cerradas sin fecha de cierre',v:sinCierre,max:Math.max(1,K.B.length),c:'var(--A)'}],null,i=>i.v+' <small>'+pct(i.v,i.max)+'%</small>')+
+    '<p class="help">Mide la calidad de carga en el sistema. "Sin clasificar" se corrige sumando palabras clave en la pestaña Sistemas.</p>';
+}
+
+function renderReglas(){
+  const fila=(a,b)=>'<tr><td>'+a+'</td><td><b>'+b+'</b></td></tr>';
+  const rng=['≥ '+CFG.UMBRAL.CRITICA,CFG.UMBRAL.ALTA+'–'+(CFG.UMBRAL.CRITICA-1),CFG.UMBRAL.MEDIA+'–'+(CFG.UMBRAL.ALTA-1),'&lt; '+CFG.UMBRAL.MEDIA];
+  $('reglas').innerHTML='<div class="grid c2"><table class="rules"><tr><th>Factor (automático, sin carga manual)</th><th>Puntos</th></tr>'+
+    fila('Sistema crítico / mayor / menor (por categoría o palabras clave)','3 / 2 / 1')+fila('Unidad en mantenimiento (Estado de Unidades)','4')+
+    fila('Sistema con impacto en seguridad','4')+fila('Riesgo ambiental (cisterna/hidráulico o “pérdida/derrame/fuga”)','3')+fila('Prioridad alta cargada en el sistema','2')+
+    fila('Fuera de SLA','2')+fila('Antigüedad &gt; 7 días / &gt; 15 días','1 / 2')+fila('Abierta sin OT asignada','1')+fila('Reincidente (mismo interno + sistema ≤ '+CFG.REINC_DIAS+' d)','2')+'</table>'+
+    '<table class="rules"><tr><th>Nivel</th><th>Score · SLA de cierre</th></tr>'+
+    NIVELES.map((l,i)=>'<tr><td>'+nv(l)+'</td><td>'+rng[i]+' · '+CFG.SLA_DIAS[l]+' día(s)</td></tr>').join('')+
+    '<tr><td colspan="2" class="small"><b>Regla de bloqueo:</b> novedad en sistema de seguridad con la unidad operando → Crítica automática.</td></tr>'+
+    '<tr><td colspan="2" class="small">El SLA se fija con la criticidad inicial (sin antigüedad ni vencimiento) y corre desde la fecha de la novedad.</td></tr></table></div>';
+}
+
+/* ===================== FLOTA ===================== */
+function renderFlota(){
+  if(!HOY) return;
+  const un=$('uUN').value, ti=$('uTipo').value, ta=$('uTaller').value, qq=$('uQ').value.trim().toLowerCase();
+  const U=UNI.filter(u=>(!un||u.un===un)&&(!ti||u.tipo===ti)&&(!ta||u.taller===ta)&&(!qq||[u.interno,u.patente,u.ot,u.detalle,u.categoria,u.demora,u.motivoBaja].join(' ').toLowerCase().includes(qq)));
+  const M=U.filter(u=>u.enMant);
+  M.forEach(u=>{u._dias=u.diasMant||diasDesde(u.fBaja)||0;u._ab=abiertasDe(u);u._comp=!!u.fComprometida&&_d(u.fComprometida)<HOY;});
+  const promD=M.length?M.reduce((a,u)=>a+u._dias,0)/M.length:0;
+  const espera=M.filter(u=>/repuest|tercer|pago|compra/i.test(u.estadoRep+' '+u.demora)||u.fEspera);
+  const riesgo=U.filter(u=>!u.enMant).map(u=>({u,ab:abiertasDe(u).filter(n=>n.nivel==='Crítica')})).filter(x=>x.ab.length);
+  const disp=U.length?Math.round((1-M.length/U.length)*1000)/10:0;
+  $('fkpis').innerHTML=kpi('N','Unidades',U.length,'en filtro')+kpi(disp>=90?'G':disp>=80?'A':'R','Disponibilidad',disp+'%',(U.length-M.length)+' disponibles')+
+    kpi('R','En mantenimiento',M.length,M.filter(u=>/CORRECT/i.test(u.tipoMant)).length+' correctivo · '+M.filter(u=>/PREVENT/i.test(u.tipoMant)).length+' preventivo')+
+    kpi(promD>7?'A':'G','Días prom. fuera',promD.toFixed(1),'unidades en mantenimiento')+
+    kpi(M.filter(u=>u._comp).length?'R':'G','Comprometida vencida',M.filter(u=>u._comp).length,'no volvieron en fecha')+
+    kpi('O','Espera repuesto / tercero',espera.length,'según estado de reparación')+
+    kpi(riesgo.length?'R':'G','Operando con críticas',riesgo.length,'disponibles con novedad crítica abierta');
+  const Ms=M.slice().sort((a,b)=>b._dias-a._dias);
+  $('fTabla').innerHTML=Ms.length?'<div class="only-desk"><div class="tscroll"><table class="t"><thead><tr><th>Interno</th><th>Patente</th><th>Tipo</th><th>U. negocio</th><th>Estado</th><th>Baja</th><th>Días</th><th>Comprometida</th><th>Categoría</th><th>Tipo mant.</th><th>Detalle</th><th>OT</th><th>Estado rep.</th><th>Demora</th><th>Nov. abiertas</th></tr></thead><tbody>'+
+    Ms.map(u=>{const pn=peorNivel(u._ab);return '<tr class="rw" onclick="abrirUnidad('+q(u.interno)+')"><td class="nw"><b>'+esc(u.interno)+'</b></td><td class="nw">'+esc(u.patente)+'</td><td>'+esc(u.tipo)+'</td><td>'+esc(u.un)+'</td><td>'+esc(u.estado)+'</td><td class="nw">'+fmt(u.fBaja)+'</td><td><b>'+u._dias+'</b></td><td class="nw">'+(u._comp?'<span class="chip r">'+fmt(u.fComprometida)+'</span>':fmt(u.fComprometida))+'</td><td>'+esc(u.categoria||'—')+'</td><td>'+esc(u.tipoMant||'—')+'</td><td>'+esc(u.detalle||'—')+'</td><td class="nw">'+esc(u.ot||'—')+'</td><td>'+esc(u.estadoRep||'—')+'</td><td>'+esc(u.demora||'—')+'</td><td class="nw">'+(u._ab.length?u._ab.length+' '+nv(pn):'<span class="muted">—</span>')+'</td></tr>';}).join('')+
+    '</tbody></table></div></div><div class="only-mob">'+Ms.map(u=>{const pn=peorNivel(u._ab);return '<div class="nc '+(pn||'')+'" onclick="abrirUnidad('+q(u.interno)+')"><div class="top"><span class="u">'+esc(u.interno)+'</span><span class="chip r">'+u._dias+' d</span></div><div class="small muted">'+esc([u.patente,u.tipo,u.un].join(' · '))+'</div><div class="d">'+esc([u.tipoMant,u.categoria,u.detalle].filter(Boolean).join(' · ')||'Sin detalle')+'</div><div>'+(u.estadoRep?'<span class="chip b">'+esc(u.estadoRep)+'</span>':'')+(u._comp?'<span class="chip r">Comprometida vencida '+fmt(u.fComprometida)+'</span>':u.fComprometida?'<span class="chip">Vuelve '+fmt(u.fComprometida)+'</span>':'')+(u._ab.length?'<span class="chip">'+u._ab.length+' nov. abiertas</span>':'')+'</div></div>';}).join('')+'</div>':'<div class="empty">Sin unidades en mantenimiento</div>';
+  const porUN={}; U.forEach(u=>{const k=u.un||'Sin UN';porUN[k]=porUN[k]||{t:0,m:0};porUN[k].t++;if(u.enMant)porUN[k].m++;});
+  $('fDispUN').innerHTML=bars(Object.entries(porUN).map(([k,o])=>{const d=1-o.m/o.t;return {l:k,v:Math.round(d*100),o,max:100,c:d>=.9?'var(--G)':d>=.8?'var(--A)':'var(--R)'};}).sort((a,b)=>a.v-b.v),null,i=>i.v+'% <small>'+i.o.m+'/'+i.o.t+'</small>');
+  $('fCat').innerHTML=bars(Object.entries(contar(M,u=>u.categoria||'Sin categoría')).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({l:k,v})));
+  $('fRep').innerHTML=bars(Object.entries(contar(M,u=>u.estadoRep||'Sin dato')).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({l:k,v,c:'var(--O)'})));
+  $('fEstados').innerHTML=bars(Object.entries(contar(U,u=>u.estado||'Sin estado')).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({l:k,v,c:/DISPONIBLE|OPERATIV/.test(k)?'var(--G)':'var(--R)'})));
+  $('fRiesgo').innerHTML=riesgo.length?riesgo.map(x=>'<div class="nc Crítica" onclick="abrirUnidad('+q(x.u.interno)+')"><div class="top"><span class="u">'+esc(x.u.interno)+' <span class="muted small" style="font-weight:400">'+esc(x.u.patente+' · '+x.u.tipo+' · '+x.u.un)+'</span></span><span class="chip g">'+esc(x.u.estado)+'</span></div>'+x.ab.map(n=>'<div class="small">• <b>'+esc(n.sistema)+'</b>: '+esc(n.descripcion.slice(0,80))+' <span class="muted">('+n.dias+' d'+(n.ot?' · '+esc(n.ot):' · sin OT')+')</span></div>').join('')+'</div>').join(''):'<div class="empty">Ninguna unidad disponible con novedades críticas abiertas</div>';
+}
+
+/* ===================== LISTADO ===================== */
+function irLista(estado,nivel,solo){
+  $('lQ').value='';$('lEstado').value=estado||'';$('lNivel').value=nivel||'';$('lSolo').value=solo||'';$('lUN').value=$('fUN').value||'';$('lSis').value=$('fSistema').value||'';
+  goTo('v-lista');
+}
+function filtrarLista(){
+  const qq=$('lQ').value.trim().toLowerCase(), e=$('lEstado').value, nl=$('lNivel').value, un=$('lUN').value, si=$('lSis').value, s=$('lSolo').value, o=$('lOrden').value;
+  const L=vivas().filter(n=>{
+    if(e==='abiertas'&&n.cerrada) return false; if(e&&e!=='abiertas'&&n.estadoRaw!==e) return false;
+    if(nl&&(n.nivel!==nl||n.cerrada)) return false; if(un&&n.un!==un) return false; if(si&&n.sistema!==si) return false;
+    if(s==='venc'&&!n.vencida) return false; if(s==='fs'&&(n.condicion!=='Fuera de servicio'||n.cerrada)) return false;
+    if(s==='seg'&&n.impSeg!=='Sí') return false; if(s==='reinc'&&!n.reincidente) return false;
+    if(s==='sinot'&&(n.ot||n.cerrada)) return false; if(s==='sinv'&&n.vinculada) return false;
+    if(qq&&![n.id,n.interno,n.patente,n.descripcion,n.sistema,n.ot,n.reporta,n.tipoUnidad,n.categoria].join(' ').toLowerCase().includes(qq)) return false;
+    return true;
+  });
+  const S={score:(a,b)=>(a.cerrada-b.cerrada)||b.score-a.score||b.dias-a.dias,dias:(a,b)=>b.dias-a.dias,fecha:(a,b)=>b.fecha.localeCompare(a.fecha)||String(b.id).localeCompare(String(a.id),'es',{numeric:true})};
+  return L.sort(S[o]);
+}
+function renderLista(){
+  if(!HOY) return;
+  const L=filtrarLista();
+  $('lCount').textContent=L.length+' novedades · '+L.filter(n=>!n.cerrada&&n.nivel==='Crítica').length+' críticas abiertas · '+L.filter(n=>n.vencida).length+' fuera de SLA';
+  $('lCards').innerHTML=L.length?L.slice(0,300).map(card).join('')+(L.length>300?'<p class="help">Mostrando 300 de '+L.length+'. Usá los filtros.</p>':''):'<div class="empty">Sin resultados</div>';
+  $('lTabla').innerHTML=L.length?'<table class="t"><thead>'+HEAD_NOV+'</thead><tbody>'+L.map(filaNov).join('')+'</tbody></table>':'<div class="empty">Sin resultados</div>';
+}
+
+/* ===================== DETALLE / FICHA ===================== */
+function abrir(id,push){
+  const n=ISS.find(x=>String(x.id)===String(id)); if(!n) return mostrarToast('No encontrada','err');
+  CUR=id;
+  $('detInfo').innerHTML='<div class="card nc '+(n.cerrada?'':n.nivel)+'" style="cursor:default">'+
+    '<div class="top"><span>'+(n.cerrada?nv('Cerrada'):nv(n.nivel))+' <b>score '+n.score+'</b></span><span class="id">N° '+esc(n.id)+'</span></div>'+
+    '<div class="u" style="margin:4px 0">'+esc(n.interno)+(n.patente?' · '+esc(n.patente):'')+'</div>'+
+    '<div style="margin-bottom:10px">'+n.motivos.map(m=>'<span class="chip r">'+esc(m)+'</span>').join('')+'</div>'+
+    '<div class="kv"><b>Novedad</b><span>'+esc(n.descripcion)+'</span><b>Categoría sistema</b><span>'+esc(n.categoria||'—')+'</span><b>Clasificación</b><span>'+esc(n.sistema)+' ('+esc(n.criticidadSistema)+')</span>'+
+    '<b>Reportó</b><span>'+esc(n.reporta||'—')+' · '+fmt(n.fecha)+(n.odometro?' · '+esc(n.odometro)+' km':'')+'</span>'+
+    '<b>Responsable</b><span>'+esc(n.responsable||'—')+'</span><b>Estado</b><span>'+esc(n.estadoRaw)+' · '+n.dias+' días</span><b>Prioridad</b><span>'+esc(n.prioridad||'—')+'</span><b>OT</b><span>'+esc(n.ot||'Sin OT')+'</span>'+
+    '<b>SLA</b><span>'+n.sla+' d → '+fmt(n.fCompromiso)+(n.vencida?' <span class="chip r">FUERA DE SLA</span>':'')+(n.cerrada?(n.enPlazo===false?' <span class="chip r">cerró fuera de plazo</span>':n.enPlazo?' <span class="chip g">cerró en plazo</span>':''):'')+'</span>'+
+    (n.cerrada?'<b>Cierre</b><span>'+fmt(n.fCierre)+'</span>':'')+
+    '<b>Unidad</b><span>'+esc([n.tipoUnidad,n.un].filter(Boolean).join(' · ')||'—')+' · <b>'+esc(n.estadoUnidad)+'</b></span></div>'+
+    (n.vinculada?'<div style="margin-top:12px"><button class="btn lt" onclick="abrirUnidad('+q(n.interno)+')">Ver ficha de la unidad ›</button></div>':'<p class="help" style="color:var(--R)">No se encontró la unidad en "Estado de Unidades" (interno/patente no coincide).</p>')+
+    '</div><p class="help">La novedad se gestiona en el sistema de mantenimiento; este tablero es de consulta y se actualiza solo.</p>';
+  goTo('v-det',push);
+}
+function abrirUnidad(interno,push){
+  CUR=interno;
+  const u=UNI.find(x=>_key(x.interno)===_key(interno));
+  const nov=ISS.filter(n=>_key(n.interno)===_key(interno)&&!n.descartada);
+  const ab=nov.filter(n=>!n.cerrada).sort((a,b)=>b.score-a.score), ce=nov.filter(n=>n.cerrada).sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,15);
+  const kv=u?'<div class="kv"><b>Patente</b><span>'+esc(u.patente)+'</span><b>Tipo</b><span>'+esc(u.tipo)+'</span><b>U. negocio / CC</b><span>'+esc(u.un)+' · '+esc(u.cc)+'</span>'+
+    '<b>Estado</b><span><b style="color:'+(u.enMant?'var(--R)':'var(--G)')+'">'+esc(u.estado)+'</b></span>'+
+    (u.enMant?'<b>Baja / días</b><span>'+fmt(u.fBaja)+' · '+(u.diasMant||diasDesde(u.fBaja)||0)+' d</span><b>Comprometida</b><span>'+fmt(u.fComprometida)+'</span><b>Mantenimiento</b><span>'+esc([u.tipoMant,u.categoria,u.detalle].filter(Boolean).join(' · ')||'—')+'</span><b>Taller</b><span>'+esc([u.taller,u.nombreTaller].filter(Boolean).join(' · ')||'—')+'</span><b>OT</b><span>'+esc(u.ot||'—')+'</span><b>Estado rep.</b><span>'+esc(u.estadoRep||'—')+'</span><b>Demora</b><span>'+esc(u.demora||'—')+'</span><b>Motivo baja</b><span>'+esc(u.motivoBaja||'—')+'</span>':'')+'</div>':'<p class="muted">Unidad no encontrada en Estado de Unidades.</p>';
+  $('uniInfo').innerHTML='<div class="card"><div style="font-size:18px;font-weight:700;margin-bottom:8px">'+esc(interno)+'</div>'+kv+'</div>'+
+    '<div class="card"><h3>Novedades abiertas ('+ab.length+')</h3>'+(ab.length?ab.map(card).join(''):'<div class="empty">Sin novedades abiertas</div>')+'</div>'+
+    '<div class="card"><h3>Últimas cerradas</h3>'+(ce.length?ce.map(card).join(''):'<div class="empty">Sin historial cargado</div>')+'</div>';
+  goTo('v-unidad',push);
+}
+
+/* ===================== EXPORTAR ===================== */
+function exportarCSV(){
+  const F=filtrosDash(), K=calcular(F);
+  const L=K.B.filter(n=>!n.cerrada||enRango(n.fecha,F)||enRango(n.fCierre,F)).sort((a,b)=>(a.cerrada-b.cerrada)||b.score-a.score);
+  const cols=['id','fecha','interno','patente','tipoUnidad','un','estadoUnidad','categoria','sistema','descripcion','estadoRaw','prioridad','ot','fCierre','nivel','score','dias','sla','fCompromiso','vencida','reincidente','impSeg','impAmb','motivos'];
+  const csv='\ufeff'+cols.join(';')+'\n'+L.map(n=>cols.map(c=>'"'+String(Array.isArray(n[c])?n[c].join(', '):(n[c]==null?'':n[c])).replace(/"/g,'""').replace(/\n/g,' ')+'"').join(';')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='Novedades_Mantenimiento_'+_iso(HOY)+'.csv';a.click();
+}
+function pdfTxt(s){return String(s==null?'':s).replace(/≤/g,'<=').replace(/≥/g,'>=').replace(/→/g,'->').replace(/[–—]/g,'-').replace(/[^\x00-\xFF]/g,'');}
+function rgb(c){return [parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];}
+function tortaPNG(cn,tot){
+  const cv=$('cvPie'),ctx=cv.getContext('2d');ctx.clearRect(0,0,400,400);let a=-Math.PI/2;
+  if(!tot){ctx.fillStyle='#eef0f4';ctx.beginPath();ctx.arc(200,200,190,0,2*Math.PI);ctx.fill();}
+  NIVELES.forEach(l=>{const v=cn[l]||0;if(!v)return;const b=a+v/tot*2*Math.PI;ctx.fillStyle=COLN[l];ctx.beginPath();ctx.moveTo(200,200);ctx.arc(200,200,190,a,b);ctx.closePath();ctx.fill();a=b;});
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(200,200,105,0,2*Math.PI);ctx.fill();
+  ctx.fillStyle='#1a1a1a';ctx.font='bold 72px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(tot,200,200);
+  return cv.toDataURL('image/png');
+}
+function exportarPDF(){
+  if(!window.jspdf) return mostrarToast('No se pudo cargar jsPDF (revisar conexión)','err');
+  const F=filtrosDash(), K=calcular(F);
+  const {jsPDF}=window.jspdf; const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight();
+  const filtros=[F.un&&'UN: '+F.un,F.tipo&&'Tipo: '+F.tipo,F.sistema&&'Sistema: '+F.sistema].filter(Boolean).join(' | ')||'Sin filtros';
+  doc.setFillColor(26,26,26);doc.rect(0,0,W,22,'F');doc.setFillColor(192,0,0);doc.rect(10,6,36,8,'F');
+  doc.setTextColor(255);doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.text('GRIFFOULIERE',28,11.4,{align:'center'});
+  doc.setFontSize(13);doc.text('Informe de Novedades de Mantenimiento',52,11.6);
+  doc.setFont('helvetica','normal');doc.setFontSize(8.5);
+  doc.text(pdfTxt('Período: '+fmt(F.desde)+' a '+fmt(F.hasta)+'   ·   '+filtros+'   ·   Generado: '+new Date().toLocaleString('es-AR')),52,17.5);
+  const head={fillColor:[26,26,26],textColor:255,fontStyle:'bold',fontSize:8};
+  doc.autoTable({startY:27,theme:'grid',headStyles:head,styles:{fontSize:9,halign:'center'},
+    head:[['Abiertas','Críticas','Fuera de SLA','Sin OT','En mantenimiento','Disponibilidad','Reportadas','Cerradas','MTTR (d)','Cierre en SLA','Reincidencias']],
+    body:[[K.abiertas.length,K.criticas.length,K.vencidas.length,K.sinOT.length,K.mant.length,K.disp+'%',K.periodo.length,K.cerradasP.length,K.mttr.toFixed(1),K.nPlazo?K.enPlazo+'%':'-',K.reinc.length]]});
+  let y=doc.lastAutoTable.finalY+7;
+  doc.setTextColor(26);doc.setFont('helvetica','bold');doc.setFontSize(10);doc.text('Abiertas por criticidad',14,y);
+  const cn=contar(K.abiertas,'nivel');doc.addImage(tortaPNG(cn,K.abiertas.length),'PNG',14,y+3,42,42);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);
+  NIVELES.forEach((l,i)=>{doc.setFillColor(...rgb(COLN[l]));doc.rect(62,y+9+i*8,4,4,'F');doc.text(pdfTxt(l+': '+(cn[l]||0)+' ('+pct(cn[l]||0,K.abiertas.length)+'%)'),68,y+12.2+i*8);});
+  const crit={}; SIS.forEach(s=>crit[s.sistema]=s.criticidad);
+  const ps=Object.entries(contar(K.periodo,'sistema')).sort((a,b)=>b[1]-a[1]).slice(0,10);let cum=0;
+  doc.setFont('helvetica','bold');doc.setFontSize(10);doc.text('Pareto por sistema (período)',110,y);
+  doc.autoTable({startY:y+3,margin:{left:110},tableWidth:W-124,theme:'striped',headStyles:head,styles:{fontSize:8},
+    head:[['Sistema','Criticidad','Cant.','%','% acum.']],body:ps.map(([k,v])=>{cum+=v;return [pdfTxt(k),crit[k]||'-',v,pct(v,K.periodo.length)+'%',pct(cum,K.periodo.length)+'%'];})});
+  y=Math.max(doc.lastAutoTable.finalY,y+48)+8;
+  doc.setFont('helvetica','bold');doc.setFontSize(10);doc.text('Prioridad de atención - novedades abiertas por criticidad',14,y);
+  const ab=K.abiertas.slice().sort((a,b)=>b.score-a.score||b.dias-a.dias);
+  doc.autoTable({startY:y+3,theme:'grid',headStyles:head,styles:{fontSize:7.5,cellPadding:1.5,overflow:'linebreak'},
+    columnStyles:{0:{cellWidth:15},1:{cellWidth:11,halign:'center'},2:{cellWidth:14},3:{cellWidth:24},5:{cellWidth:70},8:{cellWidth:10,halign:'center'},9:{cellWidth:17}},
+    head:[['Nivel','Score','N°','Interno','Sistema','Novedad','Unidad','Estado','Días','SLA','OT','Motivos']],
+    body:ab.map(n=>[n.nivel,n.score,pdfTxt(n.id),pdfTxt(n.interno+' '+n.tipoUnidad),pdfTxt(n.sistema),pdfTxt(n.descripcion),n.condicion==='Fuera de servicio'?'En mant.':'Operando',pdfTxt(n.estadoRaw),n.dias,fmt(n.fCompromiso)+(n.vencida?' VENC':''),pdfTxt(n.ot||'Sin OT'),pdfTxt(n.motivos.join(', '))]),
+    didParseCell:d=>{if(d.section==='body'&&d.column.index===0&&COLN[d.cell.raw]){d.cell.styles.fillColor=rgb(COLN[d.cell.raw]);d.cell.styles.textColor=255;d.cell.styles.fontStyle='bold';}
+      if(d.section==='body'&&d.column.index===9&&String(d.cell.raw).includes('VENC')){d.cell.styles.textColor=[192,0,0];d.cell.styles.fontStyle='bold';}}});
+  const M=K.U.filter(u=>u.enMant).map(u=>Object.assign({},u,{_d:u.diasMant||diasDesde(u.fBaja)||0})).sort((a,b)=>b._d-a._d);
+  if(M.length){
+    doc.addPage();doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(26);doc.text(pdfTxt('Unidades en mantenimiento ('+M.length+') · Disponibilidad '+K.disp+'%'),14,16);
+    doc.autoTable({startY:19,theme:'grid',headStyles:head,styles:{fontSize:7.5,cellPadding:1.5},
+      head:[['Interno','Patente','Tipo','U. negocio','Baja','Días','Comprometida','Categoría','Tipo mant.','OT','Estado rep.','Demora','Nov. abiertas']],
+      body:M.map(u=>[pdfTxt(u.interno),pdfTxt(u.patente),pdfTxt(u.tipo),pdfTxt(u.un),fmt(u.fBaja),u._d,fmt(u.fComprometida),pdfTxt(u.categoria),pdfTxt(u.tipoMant),pdfTxt(u.ot),pdfTxt(u.estadoRep),pdfTxt(u.demora),abiertasDe(u).length])});
+  }
+  const pg=doc.getNumberOfPages();
+  for(let i=1;i<=pg;i++){doc.setPage(i);doc.setFontSize(7.5);doc.setTextColor(107,114,128);doc.setFont('helvetica','normal');
+    doc.text('Griffouliere S.A. - Gestión de Mantenimiento - Documento generado automáticamente desde el sistema',14,H-6);doc.text('Página '+i+' de '+pg,W-14,H-6,{align:'right'});}
+  doc.save('Novedades_Mantenimiento_'+_iso(HOY)+'.pdf');
+}
+
+/* ===================== MODO DEMO ===================== */
+let DEMO_DB=null;
+function demoInit(){
+  let seed=11; const rnd=()=>{seed=(seed*16807)%2147483647;return (seed-1)/2147483646;}; const pick=a=>a[Math.floor(rnd()*a.length)];
+  const T=[['Frenos','Crítico','Sí','No','freno, frenos, pulmon, cinta, cintas, campana, valvula rele, perdida de aire'],['Dirección','Crítico','Sí','No','direccion, extremo, caja de direccion'],
+    ['Neumáticos y llantas','Crítico','Sí','No','neumatico, cubierta, goma, llanta, rueda, tuerca de rueda'],['Suspensión y ejes','Crítico','Sí','No','suspension, elastico, bolsa de aire, amortiguador, buje'],
+    ['Luces y señalización','Crítico','Sí','No','luz, luces, baliza, faro, stop'],['Seguridad activa (ADAS/DMS/telemetría)','Crítico','Sí','No','adas, dms, camara, telemetria, gps'],
+    ['Elementos de seguridad','Crítico','Sí','No','matafuego, extintor, cinturon, calza'],['Hidrogrúa / izaje','Crítico','Sí','No','hidrogrua, grua, pluma, limitador de carga'],
+    ['Cisterna / válvulas / mangueras','Mayor','No','Sí','cisterna, valvula, manguera, boca de hombre'],['Bomba de vacío / compresor','Mayor','No','No','bomba de vacio, vacio, compresor'],
+    ['Sistema hidráulico','Mayor','No','Sí','hidraulic, toma de fuerza'],['Motor','Mayor','No','No','motor, aceite, turbo, potencia, temperatura'],['Transmisión / embrague','Mayor','No','No','caja de cambio, embrague, cardan'],
+    ['Sistema eléctrico','Mayor','No','No','electric, bateria, alternador, tablero'],['Carrocería / cabina','Menor','No','No','espejo, puerta, parabrisas, asiento'],['Otros','Menor','No','No','']];
+  const sistemas=T.map(r=>({sistema:r[0],criticidad:r[1],seguridad:r[2],ambiental:r[3],claves:r[4].split(',').map(_norm).filter(Boolean)}));
+  const L='ABCDEFGHJKLMNPRSTUVWXYZ', hoy=_d(_iso(new Date()));
+  const tipos=[['TR','Tractor'],['ST','Semi Tanque'],['CH','Chupa 30 m³'],['CH','Chupa 9 m³'],['EV','Equipo de vacío'],['PC','Portacontenedor'],['HG','Hidrogrúa']];
+  const uns=['YPF','YPF','YPF','RAIZEN','SHELL','SPOT'];
+  const unidades=[];
+  for(let i=0;i<110;i++){const t=pick(tipos);const r=rnd();const est=r<0.16?'MANTENIMIENTO':r<0.28?'BACK UP - DISPONIBLE':'DISPONIBLE';const enM=est==='MANTENIMIENTO';
+    const fb=new Date(hoy);fb.setDate(fb.getDate()-Math.floor(rnd()*25));const fc=new Date(fb);fc.setDate(fc.getDate()+2+Math.floor(rnd()*10));
+    unidades.push({interno:t[0]+'-0'+(400+i)+'-P',patente:'A'+pick(L)+(100+Math.floor(rnd()*900))+pick(L)+pick(L),tipo:t[1],cc:'CC-'+pick(['MZA','NQN','CUYO']),un:pick(uns),estado:est,enMant:enM,descuento:enM?pick(['SI','NO']):'NO',
+      fBaja:enM?_iso(fb):'',fComprometida:enM?_iso(fc):'',diasMant:enM?Math.round((hoy-fb)/864e5):0,taller:enM?pick(['PROPIO','PROPIO','TERCERO']):'',nombreTaller:enM?pick(['BASE BARRANCAS','BASE AÑELO','TALLER EXTERNO NQN']):'',
+      categoria:enM?pick(['FRENOS','ELECTRICIDAD','MOTOR','NEUMATICOS','SUSPENSION','CISTERNA','HIDRAULICO']):'',tipoMant:enM?pick(['CORRECTIVO','CORRECTIVO','PREVENTIVO']):'',detalle:enM?pick(['MANT.CORTO (24hs)','MANT.MEDIANO (2 a 15 dias)','MANT.LARGO (+15 dias)']):'',
+      ot:enM?'OT-'+(7000+i):'',estadoRep:enM?pick(['EN REPARACION','ESPERA REPUESTO','DIAGNOSTICO','ESPERA TERCERO']):'',demora:enM?pick(['','Repuesto importado','Falta de pago proveedor','Mano de obra']):'',motivoBaja:'',fEspera:'',fEntrega:''});}
+  const fallas={'Frenos':['Pérdida de aire en circuito de freno','Pulmón de freno con fuga','Cintas de freno al límite','Válvula relé no descarga'],'Dirección':['Juego en extremo de dirección','Pérdida de aceite en caja de dirección'],
+    'Neumáticos y llantas':['Cubierta con corte lateral eje 2','Desgaste irregular de cubiertas','Falta tuerca de rueda'],'Suspensión y ejes':['Elástico quebrado','Bolsa de aire pinchada'],'Luces y señalización':['Baliza no funciona','Luz de stop semi apagada'],
+    'Seguridad activa (ADAS/DMS/telemetría)':['Cámara DMS sin imagen','Equipo de telemetría sin reportar'],'Elementos de seguridad':['Matafuego vencido','Falta calza'],'Hidrogrúa / izaje':['Pérdida en cilindro de pluma','Limitador de carga inoperativo'],
+    'Cisterna / válvulas / mangueras':['Pérdida en válvula de descarga','Manguera de succión fisurada','Junta boca de hombre con pérdida'],'Bomba de vacío / compresor':['Bomba de vacío no levanta depresión','Compresor con ruido'],
+    'Sistema hidráulico':['Pérdida en manguera hidráulica de toma de fuerza'],'Motor':['Pérdida de potencia con código de falla','Pérdida de aceite por retén','Temperatura alta en subida'],'Transmisión / embrague':['Embrague patina','Cuesta pasar cambios caja de cambio'],
+    'Sistema eléctrico':['Alternador no carga','Falla intermitente de tablero'],'Carrocería / cabina':['Espejo lateral roto','Puerta no cierra'],'Otros':['Ruido no identificado en marcha']};
+  const keys=Object.keys(fallas); const issues=[];
+  for(let i=0;i<220;i++){
+    const age=Math.floor(Math.pow(rnd(),1.4)*150);const f=new Date(hoy);f.setDate(f.getDate()-age);
+    const prev=rnd()<0.12&&issues.length?issues[issues.length-1-Math.floor(rnd()*Math.min(8,issues.length))]:null;
+    const sis=prev?prev._s:pick(keys); const iu=prev?unidades.find(x=>x.interno===prev.interno):pick(unidades);
+    const cerr=rnd()<(age>25?0.92:age>6?0.6:0.25);
+    const fx=new Date(f);fx.setDate(fx.getDate()+Math.min(age,Math.floor(rnd()*12)));
+    const est=cerr?(rnd()<0.06?'Descartada':'Resuelta'):pick(['Pendiente','Pendiente','En proceso','Asignada a OT']);
+    issues.push({_s:sis,id:String(3000+i),fecha:_iso(f),interno:iu.interno,patente:'',descripcion:pick(fallas[sis]),categoria:rnd()<0.5?sis.split(' ')[0].toUpperCase():'',
+      estadoRaw:est,cerrada:cerr,descartada:est==='Descartada',fCierre:cerr?_iso(fx):'',prioridad:rnd()<0.15?'Alta':rnd()<0.5?'Media':'Baja',
+      ot:(cerr||est==='Asignada a OT'||rnd()<0.3)?'OT-'+(6000+i):'',reporta:pick(['Chofer','Supervisor de turno','Checklist pre-uso','Mecánico']),odometro:String(Math.floor(80000+rnd()*600000))});
+  }
+  issues.push({id:'3999',fecha:_iso(hoy),interno:'XX-9999',patente:'',descripcion:'Unidad de tercero con luz de giro rota',categoria:'',estadoRaw:'Pendiente',cerrada:false,descartada:false,fCierre:'',prioridad:'',ot:'',reporta:'Chofer',odometro:''});
+  DEMO_DB={unidades,issues,sistemas,hoy};
+}
+function demoApi(action){
+  if(!DEMO_DB) demoInit();
+  const D=DEMO_DB;
+  if(action==='datos'){
+    const iss=enriquecer(D.issues.map(n=>Object.assign({},n)),D.unidades,D.sistemas,D.hoy);
+    return Promise.resolve({ok:true,hoy:_iso(D.hoy),generado:new Date().toLocaleString('es-AR'),issues:iss,unidades:D.unidades,
+      sistemas:D.sistemas.map(s=>({sistema:s.sistema,criticidad:s.criticidad,seguridad:s.seguridad})),diag:{sinVincular:iss.filter(n=>!n.vinculada).length,columnasNoEncontradas:[]}});
+  }
+  return Promise.resolve({ok:false,error:'Accion no reconocida: '+action});
+}
+
+/* ===================== INICIO ===================== */
+(function init(){
+  const h=new Date(), d=new Date(h); d.setDate(d.getDate()-89);
+  $('fDesde').value=_iso(d); $('fHasta').value=_iso(h);
+  if(DEMO) $('demoBanner').style.display='block';
+  cargar();
+})();
+</script>
+</body>
+</html>
