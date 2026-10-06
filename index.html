@@ -46,6 +46,7 @@ input,select{width:100%;font:inherit;font-size:14px;padding:7px 8px;border:1px s
 .grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px}
 @media(min-width:900px){.grid.c2{grid-template-columns:1fr 1fr}.grid.c3{grid-template-columns:repeat(3,1fr)}}
 .grid .card{margin-bottom:0}
+.mscroll{overflow-x:auto}.mscroll svg{display:block;width:100%;min-width:640px;height:auto}.mscroll text{font-family:inherit}
 .bar-item{display:grid;grid-template-columns:minmax(90px,38%) 1fr 70px;gap:8px;align-items:center;margin-bottom:6px;font-size:12.5px}
 .bar-item .lb{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bar-track{background:#eef0f4;border-radius:3px;height:14px;overflow:hidden}
@@ -125,6 +126,11 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
   <div class="card">
     <h3>Prioridad de atención · Top 10 novedades abiertas <small>(ordenadas por criticidad)</small></h3>
     <div id="topCrit"></div>
+  </div>
+  <div class="card">
+    <h3>Evolución mensual de novedades <small>(por mes de reporte · estado actual · últimos 12 meses · respeta filtros de centro de costos, tipo y sistema)</small></h3>
+    <div class="mscroll"><div id="chMes"></div></div>
+    <div class="legend" style="display:flex;flex-wrap:wrap;gap:14px;margin-top:6px"><div><i style="background:var(--G)"></i>Cerradas (% del mes)</div><div><i style="background:var(--R)"></i>Abiertas (% del mes)</div><div><i style="background:var(--N);height:3px;margin-top:5px"></i>Total reportadas</div></div>
   </div>
   <div class="grid c3">
     <div class="card"><h3>Abiertas por criticidad</h3><div id="chPie"></div></div>
@@ -216,6 +222,50 @@ const CFG = {
   TOPE_NIVELES_GESTION:1
 };
 const NIV_ORDEN=['Baja','Media','Alta','Crítica'];
+/** Matriz de criterios: definición, valores por defecto y aplicación sobre CFG.
+ *  Los valores vigentes se editan en la pestaña "Criterios" (Mantenimiento). */
+const CRIT_DEF = [
+  ['PESO_SIS_CRITICO', 'Peso sistema Crítico', 3, 'puntos', 'Técnico'],
+  ['PESO_SIS_MAYOR', 'Peso sistema Mayor', 2, 'puntos', 'Técnico'],
+  ['PESO_SIS_MENOR', 'Peso sistema Menor', 1, 'puntos', 'Técnico'],
+  ['PESO_FUERA_SERVICIO', 'Unidad en mantenimiento (Estado de Unidades)', 4, 'puntos', 'Técnico'],
+  ['IMP_SEG', 'Sistema con impacto en seguridad', 4, 'puntos', 'Técnico'],
+  ['IMP_AMB', 'Riesgo ambiental (sistema o texto: pérdida/derrame/fuga)', 3, 'puntos', 'Técnico'],
+  ['PRIO_ALTA', 'Prioridad alta cargada en CloudFleet', 2, 'puntos', 'Técnico'],
+  ['REINC', 'Reincidente (misma patente + sistema)', 2, 'puntos', 'Técnico'],
+  ['REINC_DIAS', 'Ventana de reincidencia', 30, 'días', 'Técnico'],
+  ['VENCIDA', 'Fuera de SLA', 2, 'puntos', 'Gestión'],
+  ['AGING1_DIAS', 'Antigüedad tramo 1 — desde', 7, 'días', 'Gestión'],
+  ['AGING1_PTS', 'Antigüedad tramo 1 — puntos', 1, 'puntos', 'Gestión'],
+  ['AGING2_DIAS', 'Antigüedad tramo 2 — desde', 15, 'días', 'Gestión'],
+  ['AGING2_PTS', 'Antigüedad tramo 2 — puntos', 2, 'puntos', 'Gestión'],
+  ['SIN_OT', 'Abierta sin OT (no aplica a sistemas con Cierre sin OT)', 1, 'puntos', 'Gestión'],
+  ['TOPE_NIVELES_GESTION', 'Máximo de niveles que pueden subir los agravantes de gestión', 1, 'niveles', 'Gestión'],
+  ['UMBRAL_CRITICA', 'Puntaje mínimo nivel Crítica', 9, 'puntos', 'Umbral'],
+  ['UMBRAL_ALTA', 'Puntaje mínimo nivel Alta', 6, 'puntos', 'Umbral'],
+  ['UMBRAL_MEDIA', 'Puntaje mínimo nivel Media', 3, 'puntos', 'Umbral'],
+  ['SLA_CRITICA', 'SLA de cierre nivel Crítica', 1, 'días', 'SLA'],
+  ['SLA_ALTA', 'SLA de cierre nivel Alta', 3, 'días', 'SLA'],
+  ['SLA_MEDIA', 'SLA de cierre nivel Media', 7, 'días', 'SLA'],
+  ['SLA_BAJA', 'SLA de cierre nivel Baja', 15, 'días', 'SLA'],
+  ['REGLA_SEG_OPERANDO', 'Seguridad + unidad operando → Crítica automática', 'Sí', 'Sí/No', 'Regla']
+];
+function aplicarCriterios(v) {
+  const n = (k, d) => { const x = Number(v[k]); return v[k] === '' || v[k] === undefined || isNaN(x) || x < 0 ? d : x; };
+  const D = {}; CRIT_DEF.forEach(r => D[r[0]] = r[2]);
+  CFG.PESO_SISTEMA = { 'Crítico': n('PESO_SIS_CRITICO', D.PESO_SIS_CRITICO), 'Mayor': n('PESO_SIS_MAYOR', D.PESO_SIS_MAYOR), 'Menor': n('PESO_SIS_MENOR', D.PESO_SIS_MENOR) };
+  CFG.PESO_COND = { 'Fuera de servicio': n('PESO_FUERA_SERVICIO', D.PESO_FUERA_SERVICIO), 'Operativa con restricción': 2, 'Operativa': 0 };
+  ['IMP_SEG', 'IMP_AMB', 'PRIO_ALTA', 'REINC', 'REINC_DIAS', 'VENCIDA', 'SIN_OT', 'TOPE_NIVELES_GESTION'].forEach(k => CFG[k] = n(k, D[k]));
+  CFG.AGING = [{ dias: n('AGING1_DIAS', D.AGING1_DIAS), pts: n('AGING1_PTS', D.AGING1_PTS) }, { dias: n('AGING2_DIAS', D.AGING2_DIAS), pts: n('AGING2_PTS', D.AGING2_PTS) }]
+    .sort((a, b) => b.dias - a.dias);
+  let uc = n('UMBRAL_CRITICA', D.UMBRAL_CRITICA), ua = n('UMBRAL_ALTA', D.UMBRAL_ALTA), um = n('UMBRAL_MEDIA', D.UMBRAL_MEDIA);
+  const errores = [];
+  if (!(uc > ua && ua > um)) { errores.push('Umbrales no decrecientes (Crítica > Alta > Media): se usan los valores por defecto'); uc = D.UMBRAL_CRITICA; ua = D.UMBRAL_ALTA; um = D.UMBRAL_MEDIA; }
+  CFG.UMBRAL = { CRITICA: uc, ALTA: ua, MEDIA: um };
+  CFG.SLA_DIAS = { 'Crítica': n('SLA_CRITICA', D.SLA_CRITICA), 'Alta': n('SLA_ALTA', D.SLA_ALTA), 'Media': n('SLA_MEDIA', D.SLA_MEDIA), 'Baja': n('SLA_BAJA', D.SLA_BAJA) };
+  CFG.REGLA_SEG = !/^no$/i.test(String(v.REGLA_SEG_OPERANDO === undefined ? 'Sí' : v.REGLA_SEG_OPERANDO).trim());
+  return errores;
+}
 function _d(iso){ if(!iso) return null; const p=String(iso).split('-'); return new Date(+p[0],+p[1]-1,+p[2]); }
 function _iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function _norm(s){ return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
@@ -258,7 +308,7 @@ function calcularCriticidad(n,hoy){
   let nivel=n.nivelFijo?nivelBase:nivelDe(s);
   if(NIV_ORDEN.indexOf(nivel)>tope){nivel=NIV_ORDEN[tope];m.push('Escalada por gestión limitada a '+nivel);}
   // 3) Regla obligatoria
-  if(!n.nivelFijo&&n.impSeg==='Sí'&&n.condicion!=='Fuera de servicio'&&!cerrada&&nivel!=='Crítica'){nivel='Crítica';m.unshift('Regla: seguridad + unidad operando');}
+  if(CFG.REGLA_SEG!==false&&!n.nivelFijo&&n.impSeg==='Sí'&&n.condicion!=='Fuera de servicio'&&!cerrada&&nivel!=='Crítica'){nivel='Crítica';m.unshift('Regla: seguridad + unidad operando');}
   const enPlazo=cerrada&&n.fCierre?_d(n.fCierre)<=fComp:null;
   return {score:s,scoreTecnico:base,nivelBase,nivel,motivos:m,dias,vencida,fCompromiso:_iso(fComp),sla,enPlazo};
 }
@@ -366,6 +416,7 @@ async function cargar(forzar){
   try{
     const r=await api('datos');
     ISS=r.issues; UNI=r.unidades; HOY=_d(r.hoy); DIAG=r.diag||{}; SIS=r.sistemas;
+    if(r.criterios) aplicarCriterios(r.criterios);
     poblarFiltros();
     $('hUpd').textContent='Datos '+r.generado+(DIAG.ultimaSync?' · Sync CloudFleet '+DIAG.ultimaSync:'');
     const d=[];
@@ -374,6 +425,7 @@ async function cargar(forzar){
     if(DIAG.sinEstado) d.push(DIAG.sinEstado+' novedades de vehículos de CloudFleet sin fila en Estado de Unidades (se toman como operativos). Ej.: '+(DIAG.ejemplosSinEstado||[]).slice(0,8).join(', '));
     if(DIAG.cf) d.push('Validación CloudFleet (CF_PENDIENTES: '+DIAG.cf.cargados+' pendientes exportadas, hasta N° '+DIAG.cf.maxNumero+'): de '+DIAG.cf.abiertasIsDone+' con isDone=FALSE → '+DIAG.cf.confirmadasCF+' confirmadas + '+DIAG.cf.nuevasPostCF+' posteriores a la exportación se cuentan abiertas; '+DIAG.cf.sinPendienteCF+' excluidas por no figurar pendientes en CloudFleet.');
     else if(API_URL) d.push('Pendientes según isDone SIN validar contra CloudFleet (pestaña CF_PENDIENTES vacía): el total de abiertas puede estar sobreestimado.');
+    if(DIAG.erroresCriterios&&DIAG.erroresCriterios.length) d.push('Matriz de criterios: '+DIAG.erroresCriterios.join(' · '));
     if(DIAG.columnasNoEncontradas&&DIAG.columnasNoEncontradas.length) d.push('Columnas esenciales de ISSUE no reconocidas: '+DIAG.columnasNoEncontradas.join(', ')+' (ver ?action=mapeo).');
     $('diagBanner').style.display=d.length?'block':'none'; $('diagBanner').innerHTML=d.map(esc).join('<br>');
     if(forzar) mostrarToast('Datos actualizados','ok');
@@ -429,6 +481,34 @@ function card(n){
     (n.reincidente?'<span class="chip a">Reincidente</span>':'')+(n.ot?'<span class="chip">'+esc(n.ot)+'</span>':(n.cerrada?'':n.cierreSinOT?'<span class="chip">Sin OT req.</span>':'<span class="chip a">Sin OT</span>'))+'</div></div>';
 }
 
+/** Barras apiladas por mes de reporte (cerradas / abiertas, con % del mes) + línea de total reportadas. */
+function graficoMensual(B){
+  const MES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const meses=[]; for(let i=11;i>=0;i--){const d=new Date(HOY.getFullYear(),HOY.getMonth()-i,1);meses.push({k:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),l:MES[d.getMonth()]+' '+String(d.getFullYear()).slice(2)});}
+  meses.forEach(m=>{const L=B.filter(n=>n.fecha&&n.fecha.slice(0,7)===m.k);m.t=L.length;m.c=L.filter(n=>n.cerrada).length;m.a=m.t-m.c;});
+  if(!meses.some(m=>m.t)) return '<div class="empty">Sin novedades en los últimos 12 meses</div>';
+  const W=1000,H=330,ml=44,mr=16,mt=30,mb=40,pw=W-ml-mr,ph=H-mt-mb;
+  const paso=v=>{const r=v/5,p=Math.pow(10,Math.floor(Math.log10(r)));return [1,2,5,10].map(x=>x*p).find(x=>x>=r);};
+  const st=paso(Math.max(5,...meses.map(m=>m.t))), max=Math.ceil(Math.max(...meses.map(m=>m.t))*1.12/st)*st||st;
+  const y=v=>mt+ph-v*ph/max, bw=pw/meses.length, cx=i=>ml+bw*i+bw/2, bwd=bw*0.62;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Novedades por mes">';
+  for(let v=0;v<=max;v+=st) s+='<line x1="'+ml+'" x2="'+(W-mr)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="#e0e2e8"/><text x="'+(ml-6)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="11" fill="#6b7280">'+v+'</text>';
+  const lbl=(x,yc,hgt,txt)=>hgt>=16?'<text x="'+x+'" y="'+(yc+4)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">'+txt+'</text>':'';
+  meses.forEach((m,i)=>{
+    const x=cx(i)-bwd/2, pc=m.t?Math.round(m.c*100/m.t):0, pa=m.t?100-pc:0, hc=m.c*ph/max, ha=m.a*ph/max;
+    s+='<g><title>'+m.l+': '+m.t+' reportadas · '+m.c+' cerradas ('+pc+'%) · '+m.a+' abiertas ('+pa+'%)</title>';
+    if(m.c) s+='<rect x="'+x+'" y="'+y(m.c)+'" width="'+bwd+'" height="'+hc+'" fill="#1D9E75"/>'+lbl(cx(i),y(m.c)+hc/2,hc,pc+'%');
+    if(m.a) s+='<rect x="'+x+'" y="'+y(m.t)+'" width="'+bwd+'" height="'+ha+'" fill="#C00000"/>'+lbl(cx(i),y(m.t)+ha/2,ha,pa+'%');
+    s+='</g><text x="'+cx(i)+'" y="'+(H-mb+16)+'" text-anchor="middle" font-size="11" fill="#1a1a1a">'+m.l+'</text>';
+  });
+  s+='<polyline fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linejoin="round" points="'+meses.map((m,i)=>cx(i)+','+y(m.t)).join(' ')+'"/>';
+  meses.forEach((m,i)=>{s+='<circle cx="'+cx(i)+'" cy="'+y(m.t)+'" r="4.5" fill="#fff" stroke="#1a1a1a" stroke-width="2"><title>'+m.l+': '+m.t+' reportadas</title></circle>'+
+    '<text x="'+cx(i)+'" y="'+(y(m.t)-10)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a1a">'+m.t+'</text>';});
+  const tt=meses.reduce((a,m)=>a+m.t,0), tc=meses.reduce((a,m)=>a+m.c,0);
+  s+='<text x="'+(W-mr)+'" y="16" text-anchor="end" font-size="11" fill="#6b7280">12 meses: '+tt+' reportadas · '+pct(tc,tt)+'% cerradas · '+(tt-tc)+' abiertas</text></svg>';
+  return s;
+}
+
 /* ===================== TABLERO NOVEDADES ===================== */
 function renderDash(){
   if(!HOY) return;
@@ -463,6 +543,9 @@ function renderDash(){
   $('chUnidades').innerHTML=bars(Object.entries(cu).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>{const u=UNI.find(x=>x.patente===k);return {l:k+(u?' · '+u.tipo:''),v,r:ru[k]||0,c:ru[k]?'var(--O)':'var(--N)',click:'abrirUnidad('+q(k)+')'};}),null,i=>i.v+(i.r?' <small>R'+i.r+'</small>':''))+
     '<p class="help">Naranja = con reincidencias. Candidatas a análisis de causa raíz / revisión del plan preventivo.</p>';
 
+  $('chMes').innerHTML=graficoMensual(K.B);
+  { const sc=$('chMes').parentElement; sc.scrollLeft=sc.scrollWidth; }   // en celular arranca mostrando los meses recientes
+
   const wk=[]; const lunes=new Date(HOY); lunes.setDate(lunes.getDate()-((lunes.getDay()+6)%7));
   for(let i=11;i>=0;i--){const d=new Date(lunes);d.setDate(d.getDate()-7*i);const h=new Date(d);h.setDate(h.getDate()+6);wk.push([_iso(d),_iso(h)]);}
   const tw=wk.map(([a,b])=>({a,r:K.B.filter(n=>n.fecha>=a&&n.fecha<=b).length,c:K.B.filter(n=>n.cerrada&&n.fCierre>=a&&n.fCierre<=b).length}));
@@ -484,12 +567,12 @@ function renderReglas(){
   const fila=(a,b)=>'<tr><td>'+a+'</td><td><b>'+b+'</b></td></tr>';
   const rng=['≥ '+CFG.UMBRAL.CRITICA,CFG.UMBRAL.ALTA+'–'+(CFG.UMBRAL.CRITICA-1),CFG.UMBRAL.MEDIA+'–'+(CFG.UMBRAL.ALTA-1),'&lt; '+CFG.UMBRAL.MEDIA];
   $('reglas').innerHTML='<div class="grid c2"><table class="rules"><tr><th>Factor (automático, sin carga manual)</th><th>Puntos</th></tr>'+
-    fila('Sistema crítico / mayor / menor (por categoría o palabras clave)','3 / 2 / 1')+fila('Unidad en mantenimiento (Estado de Unidades)','4')+
-    fila('Sistema con impacto en seguridad','4')+fila('Riesgo ambiental (cisterna/hidráulico o “pérdida/derrame/fuga”)','3')+fila('Prioridad alta cargada en el sistema','2')+
-    fila('Reincidente (misma patente + sistema ≤ '+CFG.REINC_DIAS+' d)','2')+'<tr><th colspan="2">Agravantes de gestión (solo abiertas · suben máx. '+CFG.TOPE_NIVELES_GESTION+' nivel)</th></tr>'+fila('Fuera de SLA','2')+fila('Antigüedad &gt; 7 días / &gt; 15 días','1 / 2')+fila('Abierta sin OT (no aplica a sistemas con “Cierre sin OT”)','1')+'</table>'+
+    fila('Sistema crítico / mayor / menor (por categoría o palabras clave)',CFG.PESO_SISTEMA['Crítico']+' / '+CFG.PESO_SISTEMA['Mayor']+' / '+CFG.PESO_SISTEMA['Menor'])+fila('Unidad en mantenimiento (Estado de Unidades)',CFG.PESO_COND['Fuera de servicio'])+
+    fila('Sistema con impacto en seguridad',CFG.IMP_SEG)+fila('Riesgo ambiental (cisterna/hidráulico o “pérdida/derrame/fuga”)',CFG.IMP_AMB)+fila('Prioridad alta cargada en el sistema',CFG.PRIO_ALTA)+
+    fila('Reincidente (misma patente + sistema ≤ '+CFG.REINC_DIAS+' d)',CFG.REINC)+'<tr><th colspan="2">Agravantes de gestión (solo abiertas · suben máx. '+CFG.TOPE_NIVELES_GESTION+' nivel)</th></tr>'+fila('Fuera de SLA',CFG.VENCIDA)+fila('Antigüedad &gt; '+CFG.AGING.slice().reverse().map(a=>a.dias).join(' / &gt; ')+' días',CFG.AGING.slice().reverse().map(a=>a.pts).join(' / '))+fila('Abierta sin OT (no aplica a sistemas con “Cierre sin OT”)',CFG.SIN_OT)+'</table>'+
     '<table class="rules"><tr><th>Nivel</th><th>Score · SLA de cierre</th></tr>'+
     NIVELES.map((l,i)=>'<tr><td>'+nv(l)+'</td><td>'+rng[i]+' · '+CFG.SLA_DIAS[l]+' día(s)</td></tr>').join('')+
-    '<tr><td colspan="2" class="small"><b>Regla de bloqueo:</b> novedad en sistema de seguridad con la unidad operando → Crítica automática.</td></tr>'+'<tr><td colspan="2" class="small"><b>Equipamiento</b> (sistemas con “Nivel fijo” en la pestaña Sistemas): nivel <b>Baja</b>; si la novedad viene con prioridad alta en CloudFleet → <b>Alta</b>. No escala por antigüedad ni por la regla de bloqueo; el atraso se ve como “Fuera de SLA”.</td></tr>'+
+    (CFG.REGLA_SEG!==false?'<tr><td colspan="2" class="small"><b>Regla de bloqueo:</b> novedad en sistema de seguridad con la unidad operando → Crítica automática.</td></tr>':'')+'<tr><td colspan="2" class="small">Valores vigentes de la pestaña <b>Criterios</b> (Score de Mantenimiento). Cambios registrados en Criterios_Log.</td></tr>'+'<tr><td colspan="2" class="small"><b>Equipamiento</b> (sistemas con “Nivel fijo” en la pestaña Sistemas): nivel <b>Baja</b>; si la novedad viene con prioridad alta en CloudFleet → <b>Alta</b>. No escala por antigüedad ni por la regla de bloqueo; el atraso se ve como “Fuera de SLA”.</td></tr>'+
     '<tr><td colspan="2" class="small">El nivel técnico (gravedad + reincidencia) fija el SLA, que corre desde la fecha de la novedad. Los agravantes de gestión pueden subir la novedad como máximo '+CFG.TOPE_NIVELES_GESTION+' nivel sobre el técnico: una falla menor atrasada se marca, pero no compite con una falla de seguridad.</td></tr></table></div>';
 }
 
