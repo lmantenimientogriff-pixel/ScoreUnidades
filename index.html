@@ -114,7 +114,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
     <div class="filters">
       <div><label>Desde</label><input type="date" id="fDesde" onchange="renderDash()"></div>
       <div><label>Hasta</label><input type="date" id="fHasta" onchange="renderDash()"></div>
-      <div><label>Unidad de negocio</label><select id="fUN" onchange="renderDash()"></select></div>
+      <div><label>Centro de costos</label><select id="fUN" onchange="renderDash()"></select></div>
       <div><label>Tipo de unidad</label><select id="fTipo" onchange="renderDash()"></select></div>
       <div><label>Sistema</label><select id="fSistema" onchange="renderDash()"></select></div>
       <div class="btnrow"><button class="btn r" onclick="exportarPDF()">PDF</button><button class="btn lt" onclick="exportarCSV()">CSV</button></div>
@@ -138,7 +138,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
   <div class="grid c3">
     <div class="card"><h3>Tendencia semanal <small>(12 semanas)</small></h3><div id="chTrend"></div>
       <div class="legend" style="display:flex;gap:14px;margin-top:6px"><div><i style="background:var(--R)"></i>Reportadas</div><div><i style="background:var(--G)"></i>Cerradas</div></div></div>
-    <div class="card"><h3>Por unidad de negocio <small>(abiertas / período)</small></h3><div id="chUN"></div></div>
+    <div class="card"><h3>Por centro de costos <small>(abiertas / período)</small></h3><div id="chUN"></div></div>
     <div class="card"><h3>Calidad del dato</h3><div id="chCalidad"></div></div>
   </div>
   <div class="card">
@@ -153,12 +153,12 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
 <main class="wide view" id="v-flota">
   <div class="card">
     <div class="filters">
-      <div><label>Unidad de negocio</label><select id="uUN" onchange="renderFlota()"></select></div>
+      <div><label>Centro de costos</label><select id="uUN" onchange="renderFlota()"></select></div>
       <div><label>Tipo de unidad</label><select id="uTipo" onchange="renderFlota()"></select></div>
       <div><label>Taller</label><select id="uTaller" onchange="renderFlota()"></select></div>
       <div style="grid-column:span 2"><label>Buscar</label><input id="uQ" placeholder="Interno, patente, OT, detalle…" oninput="renderFlota()"></div>
     </div>
-    <p class="help">Fuente: "Estado de Unidades General". Una unidad cuenta como <b>en mantenimiento</b> cuando su ESTADO no es DISPONIBLE / OPERATIVA.</p>
+    <p class="help">Fuente: "Estado de Unidades General". Datos de la unidad: <b>BD-VEHICULOS</b> (Análisis Preventivos, solo activas). Estado: <b>Estado de Unidades General</b>; cuenta como <b>en mantenimiento</b> cuando su ESTADO no es DISPONIBLE / OPERATIVA.</p>
   </div>
   <div class="kpis" id="fkpis"></div>
   <div class="card">
@@ -166,7 +166,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
     <div id="fTabla"></div>
   </div>
   <div class="grid c3">
-    <div class="card"><h3>Disponibilidad por unidad de negocio</h3><div id="fDispUN"></div></div>
+    <div class="card"><h3>Disponibilidad por centro de costos</h3><div id="fDispUN"></div></div>
     <div class="card"><h3>En mantenimiento por categoría</h3><div id="fCat"></div></div>
     <div class="card"><h3>Estado de reparación</h3><div id="fRep"></div></div>
   </div>
@@ -183,7 +183,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       <div style="grid-column:span 2"><label>Buscar</label><input id="lQ" placeholder="Interno, patente, N°, descripción, OT…" oninput="renderLista()"></div>
       <div><label>Estado</label><select id="lEstado" onchange="renderLista()"></select></div>
       <div><label>Criticidad</label><select id="lNivel" onchange="renderLista()"><option value="">Todas</option><option>Crítica</option><option>Alta</option><option>Media</option><option>Baja</option></select></div>
-      <div><label>Unidad de negocio</label><select id="lUN" onchange="renderLista()"></select></div>
+      <div><label>Centro de costos</label><select id="lUN" onchange="renderLista()"></select></div>
       <div><label>Sistema</label><select id="lSis" onchange="renderLista()"></select></div>
       <div><label>Solo</label><select id="lSolo" onchange="renderLista()"><option value="">—</option><option value="venc">Fuera de SLA</option><option value="fs">Unidad en mantenimiento</option><option value="seg">Impacto seguridad</option><option value="reinc">Reincidentes</option><option value="sinot">Sin OT</option><option value="sinv">Sin vincular a unidad</option></select></div>
       <div><label>Orden</label><select id="lOrden" onchange="renderLista()"><option value="score">Criticidad</option><option value="dias">Antigüedad</option><option value="fecha">Más recientes</option></select></div>
@@ -252,21 +252,38 @@ function calcularCriticidad(n,hoy){
   const enPlazo=cerrada&&n.fCierre?_d(n.fCierre)<=fComp:null;
   return {score:s,nivel,motivos:m,dias,vencida,fCompromiso:_iso(fComp),sla,enPlazo};
 }
-function enriquecer(issues,unidades,sistemas,hoy,vehiculos){
-  const idxU={},idxV={};
-  unidades.forEach(u=>{if(u.interno) idxU[_key(u.interno)]=u; if(u.patente) idxU[_key(u.patente)]=u;});
-  (vehiculos||[]).forEach(v=>{if(v.interno) idxV[_key(v.interno)]=v; if(v.patente) idxV[_key(v.patente)]=v;});
-  issues.forEach(n=>{
-    const codigo=n.interno;
-    const v=idxV[_key(n.interno)]||idxV[_key(n.patente)]||null;
-    const u=idxU[_key(n.interno)]||idxU[_key(n.patente)]||(v&&(idxU[_key(v.patente)]||idxU[_key(v.interno)]))||null;
-    n.codigoOrigen=codigo;
-    n.patente=(v&&v.patente)||(u&&u.patente)||n.patente||codigo;
-    n.interno=(u&&u.interno)||(v&&v.interno)||codigo;
-    n.tipoUnidad=u?u.tipo:(v?v.tipo:''); n.un=u?u.un:''; n.cc=u?u.cc:(v?v.cc:'');
-    n.grupo=v?v.grupo:''; n.propiedad=v?v.propiedad:''; n.marca=v?(v.marca+' '+v.linea).trim():'';
-    n.vinculada=!!(u||v); n.conEstado=!!u;
-    n.estadoUnidad=u?u.estado:(v?'Sin dato en Estado de Unidades':'No existe en flota CloudFleet');
+/** Flota = maestro BD-VEHICULOS (datos de la unidad) + Estado de Unidades (solo estado/mantenimiento). */
+function armarFlota(eu, veh) {
+  const idxE = {};
+  eu.forEach(e => { if (e.patente) idxE[_key(e.patente)] = e; if (e.interno) idxE[_key(e.interno)] = idxE[_key(e.interno)] || e; });
+  const usados = new Set(), out = [];
+  (veh || []).forEach(v => {
+    const e = idxE[_key(v.patente)] || (v.interno && idxE[_key(v.interno)]) || null;
+    if (e) usados.add(e);
+    out.push(Object.assign({}, e || {}, {
+      patente: v.patente, interno: v.interno || (e && e.interno) || v.patente, tipo: v.tipo, marca: v.marca, linea: v.linea,
+      cc: v.cc, un: v.cc, grupo: v.grupo, propiedad: v.propiedad, activo: !/^no$/i.test(String(v.activo || '').trim()),
+      enMaestro: true, tieneEstado: !!e, estado: e ? e.estado : 'SIN DATO DE ESTADO', enMant: e ? e.enMant : false
+    }));
+  });
+  eu.forEach(e => { if (!usados.has(e)) out.push(Object.assign({}, e, { un: e.cc || e.un, grupo: '', propiedad: '', marca: '', linea: '',
+    activo: true, enMaestro: false, tieneEstado: true })); });
+  return out;
+}
+
+function enriquecer(issues, flota, sistemas, hoy) {
+  const idx = {};
+  flota.forEach(u => { if (u.patente) idx[_key(u.patente)] = u; if (u.interno && !idx[_key(u.interno)]) idx[_key(u.interno)] = u; });
+  issues.forEach(n => {
+    const codigo = n.interno;
+    const u = idx[_key(n.interno)] || idx[_key(n.patente)] || null;
+    n.codigoOrigen = codigo;
+    n.patente = u ? u.patente : (n.patente || codigo);
+    n.interno = u ? (u.interno || u.patente) : codigo;
+    n.tipoUnidad = u ? u.tipo : ''; n.un = u ? u.un : ''; n.cc = u ? u.cc : '';
+    n.grupo = u ? (u.grupo || '') : ''; n.propiedad = u ? (u.propiedad || '') : ''; n.marca = u ? ((u.marca || '') + ' ' + (u.linea || '')).trim() : '';
+    n.vinculada = !!u; n.conEstado = !!(u && u.tieneEstado);
+    n.estadoUnidad = u ? u.estado : 'No existe en flota';
     n.condicion=u&&u.enMant?'Fuera de servicio':'Operativa';
     const s=clasificar(n,sistemas);
     n.sistema=s.sistema; n.criticidadSistema=s.criticidad;
@@ -308,6 +325,7 @@ function contar(arr,key){const m={};arr.forEach(n=>{const k=typeof key==='functi
 function q(s){return esc("'"+String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'")+"'");}
 function diasDesde(iso){return iso?Math.round((HOY-_d(iso))/864e5):null;}
 function vivas(){return ISS.filter(n=>!n.descartada);}
+function flotaActiva(){return UNI.filter(u=>u.activo!==false);}
 function abiertasDe(u){return ISS.filter(n=>!n.cerrada&&_key(n.interno)===_key(u.interno));}
 function peorNivel(arr){return arr.length?arr.slice().sort((a,b)=>NORD[a.nivel]-NORD[b.nivel])[0].nivel:null;}
 
@@ -352,9 +370,9 @@ async function cargar(forzar){
   loader(false);
 }
 function poblarFiltros(){
-  const uns=uniq(UNI.map(u=>u.un)), tipos=uniq(UNI.map(u=>u.tipo)), sis=SIS.map(s=>s.sistema);
+  const FA=flotaActiva(), uns=uniq(FA.map(u=>u.un)), tipos=uniq(FA.map(u=>u.tipo)), sis=SIS.map(s=>s.sistema);
   opts('fUN',uns,'Todas');opts('fTipo',tipos,'Todos');opts('fSistema',sis,'Todos');
-  opts('uUN',uns,'Todas');opts('uTipo',tipos,'Todos');opts('uTaller',uniq(UNI.map(u=>u.taller)),'Todos');
+  opts('uUN',uns,'Todas');opts('uTipo',tipos,'Todos');opts('uTaller',uniq(FA.map(u=>u.taller)),'Todos');
   opts('lUN',uns,'Todas');opts('lSis',sis,'Todos');
   const ests=uniq(ISS.map(n=>n.estadoRaw)), lv=$('lEstado').value;
   $('lEstado').innerHTML='<option value="abiertas">Abiertas (todas)</option><option value="">Todos</option>'+ests.map(e=>'<option>'+esc(e)+'</option>').join('');
@@ -367,7 +385,7 @@ function filtrosDash(){return {desde:$('fDesde').value,hasta:$('fHasta').value,u
 function enRango(iso,F){return iso&&(!F.desde||iso>=F.desde)&&(!F.hasta||iso<=F.hasta);}
 function calcular(F){
   const B=vivas().filter(n=>(!F.un||n.un===F.un)&&(!F.tipo||n.tipoUnidad===F.tipo)&&(!F.sistema||n.sistema===F.sistema));
-  const U=UNI.filter(u=>(!F.un||u.un===F.un)&&(!F.tipo||u.tipo===F.tipo));
+  const U=flotaActiva().filter(u=>(!F.un||u.un===F.un)&&(!F.tipo||u.tipo===F.tipo)), UE=U.filter(u=>u.tieneEstado!==false);
   const abiertas=B.filter(n=>!n.cerrada), periodo=B.filter(n=>enRango(n.fecha,F)), cerradasP=B.filter(n=>n.cerrada&&enRango(n.fCierre,F));
   const conPlazo=cerradasP.filter(n=>n.enPlazo!==null), mant=U.filter(u=>u.enMant);
   return {B,U,abiertas,periodo,cerradasP,mant,
@@ -376,7 +394,7 @@ function calcular(F){
     mttr:cerradasP.length?cerradasP.reduce((a,n)=>a+n.dias,0)/cerradasP.length:0,
     enPlazo:pct(conPlazo.filter(n=>n.enPlazo).length,conPlazo.length),nPlazo:conPlazo.length,
     edadProm:abiertas.length?abiertas.reduce((a,n)=>a+n.dias,0)/abiertas.length:0,
-    disp:U.length?Math.round((1-mant.length/U.length)*1000)/10:0};
+    UE,disp:UE.length?Math.round((1-mant.length/UE.length)*1000)/10:0};
 }
 
 /* ===================== COMPONENTES ===================== */
@@ -409,7 +427,7 @@ function renderDash(){
     kpi('R','Críticas abiertas',K.criticas.length,K.seg.length+' en sistemas de seguridad',"irLista('abiertas','Crítica')")+
     kpi(K.vencidas.length?'R':'G','Fuera de SLA',K.vencidas.length,pct(K.vencidas.length,K.abiertas.length)+'% de abiertas',"irLista('abiertas','','venc')")+
     kpi(K.sinOT.length?'O':'G','Sin OT',K.sinOT.length,'abiertas sin orden de trabajo',"irLista('abiertas','','sinot')")+
-    kpi('R','En mantenimiento',K.mant.length,'Disponibilidad '+K.disp+'% ('+K.U.length+' u.)',"goTo('v-flota')")+
+    kpi('R','En mantenimiento',K.mant.length,'Disponibilidad '+K.disp+'% ('+K.UE.length+' u. con estado)',"goTo('v-flota')")+
     kpi('B','Reportadas período',K.periodo.length,K.cerradasP.length+' cerradas en período')+
     kpi(K.mttr>7?'A':'G','MTTR',K.mttr.toFixed(1)+' d','tiempo medio de cierre')+
     kpi(K.enPlazo>=85?'G':K.enPlazo>=70?'A':'R','Cierre en SLA',K.nPlazo?K.enPlazo+'%':'—','meta ≥ 85% · n='+K.nPlazo)+
@@ -439,7 +457,7 @@ function renderDash(){
   const mx=Math.max(1,...tw.map(t=>Math.max(t.r,t.c)));
   $('chTrend').innerHTML='<div class="trend">'+tw.map(t=>'<div class="w" title="Semana '+fmt(t.a)+': '+t.r+' reportadas / '+t.c+' cerradas"><div class="p"><div style="height:'+(t.r*100/mx)+'%;background:var(--R)"></div><div style="height:'+(t.c*100/mx)+'%;background:var(--G)"></div></div><small>'+t.a.slice(8)+'/'+t.a.slice(5,7)+'</small></div>').join('')+'</div>';
 
-  const ba=contar(K.abiertas,n=>n.un||'Sin dato UN'), bp=contar(K.periodo,n=>n.un||'Sin dato UN');
+  const ba=contar(K.abiertas,n=>n.un||'Sin centro de costos'), bp=contar(K.periodo,n=>n.un||'Sin centro de costos');
   $('chUN').innerHTML=bars(uniq([...Object.keys(ba),...Object.keys(bp)]).map(k=>({l:k,v:ba[k]||0,p:bp[k]||0})).sort((a,b)=>b.v-a.v),'var(--B)',i=>i.v+' <small>/ '+i.p+'</small>');
   const sinV=K.abiertas.filter(n=>!n.vinculada).length, otros=K.periodo.filter(n=>n.sistema==='Otros').length, sinCierre=K.B.filter(n=>n.cerrada&&!n.fCierre).length;
   $('chCalidad').innerHTML=bars([
@@ -467,28 +485,29 @@ function renderReglas(){
 function renderFlota(){
   if(!HOY) return;
   const un=$('uUN').value, ti=$('uTipo').value, ta=$('uTaller').value, qq=$('uQ').value.trim().toLowerCase();
-  const U=UNI.filter(u=>(!un||u.un===un)&&(!ti||u.tipo===ti)&&(!ta||u.taller===ta)&&(!qq||[u.interno,u.patente,u.ot,u.detalle,u.categoria,u.demora,u.motivoBaja].join(' ').toLowerCase().includes(qq)));
+  const U=flotaActiva().filter(u=>(!un||u.un===un)&&(!ti||u.tipo===ti)&&(!ta||u.taller===ta)&&(!qq||[u.interno,u.patente,u.marca,u.linea,u.grupo,u.ot,u.detalle,u.categoria,u.demora,u.motivoBaja].join(' ').toLowerCase().includes(qq)));
   const M=U.filter(u=>u.enMant);
   M.forEach(u=>{u._dias=u.diasMant||diasDesde(u.fBaja)||0;u._ab=abiertasDe(u);u._comp=!!u.fComprometida&&_d(u.fComprometida)<HOY;});
   const promD=M.length?M.reduce((a,u)=>a+u._dias,0)/M.length:0;
   const espera=M.filter(u=>/repuest|tercer|pago|compra/i.test(u.estadoRep+' '+u.demora)||u.fEspera);
   const riesgo=U.filter(u=>!u.enMant).map(u=>({u,ab:abiertasDe(u).filter(n=>n.nivel==='Crítica')})).filter(x=>x.ab.length);
-  const disp=U.length?Math.round((1-M.length/U.length)*1000)/10:0;
-  $('fkpis').innerHTML=kpi('N','Unidades',U.length,'en filtro')+kpi(disp>=90?'G':disp>=80?'A':'R','Disponibilidad',disp+'%',(U.length-M.length)+' disponibles')+
+  const UE=U.filter(u=>u.tieneEstado!==false), sinE=U.length-UE.length;
+  const disp=UE.length?Math.round((1-M.length/UE.length)*1000)/10:0;
+  $('fkpis').innerHTML=kpi('N','Unidades activas',U.length,'maestro BD-VEHICULOS')+kpi(disp>=90?'G':disp>=80?'A':'R','Disponibilidad',disp+'%',(UE.length-M.length)+' disponibles de '+UE.length+' con estado')+(sinE?kpi('A','Sin dato de estado',sinE,'no figuran en Estado de Unidades'):'')+
     kpi('R','En mantenimiento',M.length,M.filter(u=>/CORRECT/i.test(u.tipoMant)).length+' correctivo · '+M.filter(u=>/PREVENT/i.test(u.tipoMant)).length+' preventivo')+
     kpi(promD>7?'A':'G','Días prom. fuera',promD.toFixed(1),'unidades en mantenimiento')+
     kpi(M.filter(u=>u._comp).length?'R':'G','Comprometida vencida',M.filter(u=>u._comp).length,'no volvieron en fecha')+
     kpi('O','Espera repuesto / tercero',espera.length,'según estado de reparación')+
     kpi(riesgo.length?'R':'G','Operando con críticas',riesgo.length,'disponibles con novedad crítica abierta');
   const Ms=M.slice().sort((a,b)=>b._dias-a._dias);
-  $('fTabla').innerHTML=Ms.length?'<div class="only-desk"><div class="tscroll"><table class="t"><thead><tr><th>Interno</th><th>Patente</th><th>Tipo</th><th>U. negocio</th><th>Estado</th><th>Baja</th><th>Días</th><th>Comprometida</th><th>Categoría</th><th>Tipo mant.</th><th>Detalle</th><th>OT</th><th>Estado rep.</th><th>Demora</th><th>Nov. abiertas</th></tr></thead><tbody>'+
+  $('fTabla').innerHTML=Ms.length?'<div class="only-desk"><div class="tscroll"><table class="t"><thead><tr><th>Interno</th><th>Patente</th><th>Tipo</th><th>Centro costos</th><th>Estado</th><th>Baja</th><th>Días</th><th>Comprometida</th><th>Categoría</th><th>Tipo mant.</th><th>Detalle</th><th>OT</th><th>Estado rep.</th><th>Demora</th><th>Nov. abiertas</th></tr></thead><tbody>'+
     Ms.map(u=>{const pn=peorNivel(u._ab);return '<tr class="rw" onclick="abrirUnidad('+q(u.interno)+')"><td class="nw"><b>'+esc(u.interno)+'</b></td><td class="nw">'+esc(u.patente)+'</td><td>'+esc(u.tipo)+'</td><td>'+esc(u.un)+'</td><td>'+esc(u.estado)+'</td><td class="nw">'+fmt(u.fBaja)+'</td><td><b>'+u._dias+'</b></td><td class="nw">'+(u._comp?'<span class="chip r">'+fmt(u.fComprometida)+'</span>':fmt(u.fComprometida))+'</td><td>'+esc(u.categoria||'—')+'</td><td>'+esc(u.tipoMant||'—')+'</td><td>'+esc(u.detalle||'—')+'</td><td class="nw">'+esc(u.ot||'—')+'</td><td>'+esc(u.estadoRep||'—')+'</td><td>'+esc(u.demora||'—')+'</td><td class="nw">'+(u._ab.length?u._ab.length+' '+nv(pn):'<span class="muted">—</span>')+'</td></tr>';}).join('')+
     '</tbody></table></div></div><div class="only-mob">'+Ms.map(u=>{const pn=peorNivel(u._ab);return '<div class="nc '+(pn||'')+'" onclick="abrirUnidad('+q(u.interno)+')"><div class="top"><span class="u">'+esc(u.interno)+'</span><span class="chip r">'+u._dias+' d</span></div><div class="small muted">'+esc([u.patente,u.tipo,u.un].join(' · '))+'</div><div class="d">'+esc([u.tipoMant,u.categoria,u.detalle].filter(Boolean).join(' · ')||'Sin detalle')+'</div><div>'+(u.estadoRep?'<span class="chip b">'+esc(u.estadoRep)+'</span>':'')+(u._comp?'<span class="chip r">Comprometida vencida '+fmt(u.fComprometida)+'</span>':u.fComprometida?'<span class="chip">Vuelve '+fmt(u.fComprometida)+'</span>':'')+(u._ab.length?'<span class="chip">'+u._ab.length+' nov. abiertas</span>':'')+'</div></div>';}).join('')+'</div>':'<div class="empty">Sin unidades en mantenimiento</div>';
-  const porUN={}; U.forEach(u=>{const k=u.un||'Sin UN';porUN[k]=porUN[k]||{t:0,m:0};porUN[k].t++;if(u.enMant)porUN[k].m++;});
+  const porUN={}; UE.forEach(u=>{const k=u.un||'Sin UN';porUN[k]=porUN[k]||{t:0,m:0};porUN[k].t++;if(u.enMant)porUN[k].m++;});
   $('fDispUN').innerHTML=bars(Object.entries(porUN).map(([k,o])=>{const d=1-o.m/o.t;return {l:k,v:Math.round(d*100),o,max:100,c:d>=.9?'var(--G)':d>=.8?'var(--A)':'var(--R)'};}).sort((a,b)=>a.v-b.v),null,i=>i.v+'% <small>'+i.o.m+'/'+i.o.t+'</small>');
   $('fCat').innerHTML=bars(Object.entries(contar(M,u=>u.categoria||'Sin categoría')).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({l:k,v})));
   $('fRep').innerHTML=bars(Object.entries(contar(M,u=>u.estadoRep||'Sin dato')).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({l:k,v,c:'var(--O)'})));
-  $('fEstados').innerHTML=bars(Object.entries(contar(U,u=>u.estado||'Sin estado')).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({l:k,v,c:/DISPONIBLE|OPERATIV/.test(k)?'var(--G)':'var(--R)'})));
+  $('fEstados').innerHTML=bars(Object.entries(contar(U,u=>u.estado||'Sin estado')).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({l:k,v,c:/DISPONIBLE|OPERATIV/.test(k)?'var(--G)':/SIN DATO/.test(k)?'var(--GT)':'var(--R)'})));
   $('fRiesgo').innerHTML=riesgo.length?riesgo.map(x=>'<div class="nc Crítica" onclick="abrirUnidad('+q(x.u.interno)+')"><div class="top"><span class="u">'+esc(x.u.interno)+' <span class="muted small" style="font-weight:400">'+esc(x.u.patente+' · '+x.u.tipo+' · '+x.u.un)+'</span></span><span class="chip g">'+esc(x.u.estado)+'</span></div>'+x.ab.map(n=>'<div class="small">• <b>'+esc(n.sistema)+'</b>: '+esc(n.descripcion.slice(0,80))+' <span class="muted">('+n.dias+' d'+(n.ot?' · '+esc(n.ot):' · sin OT')+')</span></div>').join('')+'</div>').join(''):'<div class="empty">Ninguna unidad disponible con novedades críticas abiertas</div>';
 }
 
@@ -542,7 +561,7 @@ function abrirUnidad(interno,push){
   const u=UNI.find(x=>_key(x.interno)===_key(interno));
   const nov=ISS.filter(n=>_key(n.interno)===_key(interno)&&!n.descartada);
   const ab=nov.filter(n=>!n.cerrada).sort((a,b)=>b.score-a.score), ce=nov.filter(n=>n.cerrada).sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,15);
-  const kv=u?'<div class="kv"><b>Patente</b><span>'+esc(u.patente)+'</span><b>Tipo</b><span>'+esc(u.tipo)+'</span><b>U. negocio / CC</b><span>'+esc(u.un)+' · '+esc(u.cc)+'</span>'+
+  const kv=u?'<div class="kv"><b>Patente</b><span>'+esc(u.patente)+'</span><b>Tipo</b><span>'+esc(u.tipo)+'</span><b>Marca / línea</b><span>'+esc([u.marca,u.linea].filter(Boolean).join(' ')||'—')+'</span><b>Centro de costos</b><span>'+esc(u.cc||'—')+'</span><b>Grupo</b><span>'+esc([u.grupo,u.propiedad].filter(Boolean).join(' · ')||'—')+'</span>'+
     '<b>Estado</b><span><b style="color:'+(u.enMant?'var(--R)':'var(--G)')+'">'+esc(u.estado)+'</b></span>'+
     (u.enMant?'<b>Baja / días</b><span>'+fmt(u.fBaja)+' · '+(u.diasMant||diasDesde(u.fBaja)||0)+' d</span><b>Comprometida</b><span>'+fmt(u.fComprometida)+'</span><b>Mantenimiento</b><span>'+esc([u.tipoMant,u.categoria,u.detalle].filter(Boolean).join(' · ')||'—')+'</span><b>Taller</b><span>'+esc([u.taller,u.nombreTaller].filter(Boolean).join(' · ')||'—')+'</span><b>OT</b><span>'+esc(u.ot||'—')+'</span><b>Estado rep.</b><span>'+esc(u.estadoRep||'—')+'</span><b>Demora</b><span>'+esc(u.demora||'—')+'</span><b>Motivo baja</b><span>'+esc(u.motivoBaja||'—')+'</span>':'')+'</div>':'<p class="muted">Unidad no encontrada en Estado de Unidades.</p>';
   $('uniInfo').innerHTML='<div class="card"><div style="font-size:18px;font-weight:700;margin-bottom:8px">'+esc(interno)+'</div>'+kv+'</div>'+
@@ -607,7 +626,7 @@ function exportarPDF(){
   if(M.length){
     doc.addPage();doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(26);doc.text(pdfTxt('Unidades en mantenimiento ('+M.length+') · Disponibilidad '+K.disp+'%'),14,16);
     doc.autoTable({startY:19,theme:'grid',headStyles:head,styles:{fontSize:7.5,cellPadding:1.5},
-      head:[['Interno','Patente','Tipo','U. negocio','Baja','Días','Comprometida','Categoría','Tipo mant.','OT','Estado rep.','Demora','Nov. abiertas']],
+      head:[['Interno','Patente','Tipo','Centro costos','Baja','Días','Comprometida','Categoría','Tipo mant.','OT','Estado rep.','Demora','Nov. abiertas']],
       body:M.map(u=>[pdfTxt(u.interno),pdfTxt(u.patente),pdfTxt(u.tipo),pdfTxt(u.un),fmt(u.fBaja),u._d,fmt(u.fComprometida),pdfTxt(u.categoria),pdfTxt(u.tipoMant),pdfTxt(u.ot),pdfTxt(u.estadoRep),pdfTxt(u.demora),abiertasDe(u).length])});
   }
   const pg=doc.getNumberOfPages();
@@ -634,7 +653,7 @@ function demoInit(){
   const unidades=[];
   for(let i=0;i<110;i++){const t=pick(tipos);const r=rnd();const est=r<0.16?'MANTENIMIENTO':r<0.28?'BACK UP - DISPONIBLE':'DISPONIBLE';const enM=est==='MANTENIMIENTO';
     const fb=new Date(hoy);fb.setDate(fb.getDate()-Math.floor(rnd()*25));const fc=new Date(fb);fc.setDate(fc.getDate()+2+Math.floor(rnd()*10));
-    unidades.push({interno:t[0]+'-0'+(400+i)+'-P',patente:'A'+pick(L)+(100+Math.floor(rnd()*900))+pick(L)+pick(L),tipo:t[1],cc:'CC-'+pick(['MZA','NQN','CUYO']),un:pick(uns),estado:est,enMant:enM,descuento:enM?pick(['SI','NO']):'NO',
+    unidades.push({interno:t[0]+'-0'+(400+i)+'-P',patente:'A'+pick(L)+(100+Math.floor(rnd()*900))+pick(L)+pick(L),tipo:t[1],cc:'',un:pick(uns),estado:est,enMant:enM,descuento:enM?pick(['SI','NO']):'NO',
       fBaja:enM?_iso(fb):'',fComprometida:enM?_iso(fc):'',diasMant:enM?Math.round((hoy-fb)/864e5):0,taller:enM?pick(['PROPIO','PROPIO','TERCERO']):'',nombreTaller:enM?pick(['BASE BARRANCAS','BASE AÑELO','TALLER EXTERNO NQN']):'',
       categoria:enM?pick(['FRENOS','ELECTRICIDAD','MOTOR','NEUMATICOS','SUSPENSION','CISTERNA','HIDRAULICO']):'',tipoMant:enM?pick(['CORRECTIVO','CORRECTIVO','PREVENTIVO']):'',detalle:enM?pick(['MANT.CORTO (24hs)','MANT.MEDIANO (2 a 15 dias)','MANT.LARGO (+15 dias)']):'',
       ot:enM?'OT-'+(7000+i):'',estadoRep:enM?pick(['EN REPARACION','ESPERA REPUESTO','DIAGNOSTICO','ESPERA TERCERO']):'',demora:enM?pick(['','Repuesto importado','Falta de pago proveedor','Mano de obra']):'',motivoBaja:'',fEspera:'',fEntrega:''});}
@@ -657,14 +676,14 @@ function demoInit(){
       ot:(cerr||est==='Asignada a OT'||rnd()<0.3)?'OT-'+(6000+i):'',reporta:pick(['Chofer','Supervisor de turno','Checklist pre-uso','Mecánico']),odometro:String(Math.floor(80000+rnd()*600000))});
   }
   issues.push({id:'3999',fecha:_iso(hoy),interno:'XX-9999',patente:'',descripcion:'Unidad de tercero con luz de giro rota',categoria:'',estadoRaw:'Pendiente',cerrada:false,descartada:false,fCierre:'',prioridad:'',ot:'',reporta:'Chofer',odometro:''});
-  DEMO_DB={unidades,issues,sistemas,hoy};
+  DEMO_DB={unidades,flota:armarFlota(unidades,[]),issues,sistemas,hoy};
 }
 function demoApi(action){
   if(!DEMO_DB) demoInit();
   const D=DEMO_DB;
   if(action==='datos'){
-    const iss=enriquecer(D.issues.map(n=>Object.assign({},n)),D.unidades,D.sistemas,D.hoy,[]);
-    return Promise.resolve({ok:true,hoy:_iso(D.hoy),generado:new Date().toLocaleString('es-AR'),issues:iss,unidades:D.unidades,
+    const iss=enriquecer(D.issues.map(n=>Object.assign({},n)),D.flota,D.sistemas,D.hoy);
+    return Promise.resolve({ok:true,hoy:_iso(D.hoy),generado:new Date().toLocaleString('es-AR'),issues:iss,unidades:D.flota,
       sistemas:D.sistemas.map(s=>({sistema:s.sistema,criticidad:s.criticidad,seguridad:s.seguridad})),diag:{sinVincular:iss.filter(n=>!n.vinculada).length,columnasNoEncontradas:[]}});
   }
   return Promise.resolve({ok:false,error:'Accion no reconocida: '+action});
