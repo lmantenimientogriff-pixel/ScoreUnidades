@@ -212,8 +212,10 @@ const CFG = {
   IMP_SEG:4, IMP_AMB:3, VENCIDA:2, REINC:2, REINC_DIAS:30, PRIO_ALTA:2, SIN_OT:1,
   AGING:[{dias:15,pts:2},{dias:7,pts:1}],
   UMBRAL:{CRITICA:9,ALTA:6,MEDIA:3},
-  SLA_DIAS:{'Crítica':1,'Alta':3,'Media':7,'Baja':15}
+  SLA_DIAS:{'Crítica':1,'Alta':3,'Media':7,'Baja':15},
+  TOPE_NIVELES_GESTION:1
 };
+const NIV_ORDEN=['Baja','Media','Alta','Crítica'];
 function _d(iso){ if(!iso) return null; const p=String(iso).split('-'); return new Date(+p[0],+p[1]-1,+p[2]); }
 function _iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function _norm(s){ return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
@@ -222,35 +224,43 @@ function clasificar(n,sistemas){
   const cat=_norm(n.categoria), txt=_norm(n.categoria+' '+n.descripcion);
   let s=sistemas.find(x=>cat&&(_norm(x.sistema)===cat||x.claves.some(k=>cat===k)));
   if(!s) s=sistemas.find(x=>x.claves.some(k=>k&&(' '+txt+' ').indexOf(' '+k)>=0));
-  return s||sistemas.find(x=>x.sistema==='Otros')||{sistema:'Otros',criticidad:'Menor',seguridad:'No',ambiental:'No'};
+  return s||sistemas.find(x=>x.sistema==='Otros')||{sistema:'Otros',criticidad:'Menor',seguridad:'No',ambiental:'No',cierreSinOT:'No',nivelFijo:''};
 }
 function calcularCriticidad(n,hoy){
   const cerrada=n.cerrada;
   const f=_d(n.fecha)||hoy;
   const fin=cerrada&&n.fCierre?_d(n.fCierre):hoy;
   const dias=Math.max(0,Math.round((fin-f)/864e5));
+  const nivelDe=p=>p>=CFG.UMBRAL.CRITICA?'Crítica':p>=CFG.UMBRAL.ALTA?'Alta':p>=CFG.UMBRAL.MEDIA?'Media':'Baja';
   let s=0;const m=[];
+  // 1) Puntaje TÉCNICO (define nivel base y SLA)
   s+=CFG.PESO_SISTEMA[n.criticidadSistema]||1; if(n.criticidadSistema==='Crítico') m.push('Sistema crítico');
   const pc=CFG.PESO_COND[n.condicion]||0; s+=pc;
   if(n.condicion==='Fuera de servicio') m.push('Unidad en mantenimiento'); else if(pc) m.push('Opera con restricción');
   if(n.impSeg==='Sí'){s+=CFG.IMP_SEG;m.push('Impacto seguridad');}
   if(n.impAmb==='Sí'){s+=CFG.IMP_AMB;m.push('Riesgo ambiental');}
   if(/alta|urgent|critic|high/i.test(n.prioridad||'')){s+=CFG.PRIO_ALTA;m.push('Prioridad alta en sistema');}
+  if(n.reincidente){s+=CFG.REINC;m.push('Reincidente ('+CFG.REINC_DIAS+' d)');}
   const base=s;
-  const nivelBase=base>=CFG.UMBRAL.CRITICA?'Crítica':base>=CFG.UMBRAL.ALTA?'Alta':base>=CFG.UMBRAL.MEDIA?'Media':'Baja';
+  const prioAlta=/alta|urgent|critic|high/i.test(n.prioridad||'');
+  const nivelBase=n.nivelFijo?(prioAlta&&NIV_ORDEN.indexOf(n.nivelFijo)<2?'Alta':n.nivelFijo):nivelDe(base);
+  if(n.nivelFijo) m.unshift('Nivel fijo del sistema: '+n.nivelFijo+(nivelBase!==n.nivelFijo?' → Alta por prioridad de la novedad':''));
   const sla=CFG.SLA_DIAS[nivelBase];
   const fComp=new Date(f); fComp.setDate(fComp.getDate()+sla);
   const vencida=!cerrada&&fComp<hoy;
+  // 2) Agravantes de GESTIÓN (solo abiertas, con tope de niveles)
   if(!cerrada){
     if(vencida){s+=CFG.VENCIDA;m.push('Fuera de SLA ('+sla+' d)');}
     for(const a of CFG.AGING){ if(dias>a.dias){s+=a.pts;m.push('Antigüedad '+dias+' d');break;} }
-    if(!n.ot){s+=CFG.SIN_OT;m.push('Sin OT asignada');}
+    if(!n.ot&&!n.cierreSinOT){s+=CFG.SIN_OT;m.push('Sin OT asignada');}
   }
-  if(n.reincidente){s+=CFG.REINC;m.push('Reincidente');}
-  let nivel=s>=CFG.UMBRAL.CRITICA?'Crítica':s>=CFG.UMBRAL.ALTA?'Alta':s>=CFG.UMBRAL.MEDIA?'Media':'Baja';
-  if(n.impSeg==='Sí'&&n.condicion!=='Fuera de servicio'&&!cerrada&&nivel!=='Crítica'){nivel='Crítica';m.unshift('Regla: seguridad + unidad operando');}
+  const tope=Math.min(NIV_ORDEN.length-1,NIV_ORDEN.indexOf(nivelBase)+(n.nivelFijo?0:CFG.TOPE_NIVELES_GESTION));
+  let nivel=n.nivelFijo?nivelBase:nivelDe(s);
+  if(NIV_ORDEN.indexOf(nivel)>tope){nivel=NIV_ORDEN[tope];m.push('Escalada por gestión limitada a '+nivel);}
+  // 3) Regla obligatoria
+  if(!n.nivelFijo&&n.impSeg==='Sí'&&n.condicion!=='Fuera de servicio'&&!cerrada&&nivel!=='Crítica'){nivel='Crítica';m.unshift('Regla: seguridad + unidad operando');}
   const enPlazo=cerrada&&n.fCierre?_d(n.fCierre)<=fComp:null;
-  return {score:s,nivel,motivos:m,dias,vencida,fCompromiso:_iso(fComp),sla,enPlazo};
+  return {score:s,scoreTecnico:base,nivelBase,nivel,motivos:m,dias,vencida,fCompromiso:_iso(fComp),sla,enPlazo};
 }
 /** Flota = maestro BD-VEHICULOS (datos de la unidad) + Estado de Unidades (solo estado/mantenimiento). */
 function armarFlota(eu, veh) {
@@ -286,7 +296,7 @@ function enriquecer(issues, flota, sistemas, hoy) {
     n.estadoUnidad = u ? u.estado : 'No existe en flota';
     n.condicion=u&&u.enMant?'Fuera de servicio':'Operativa';
     const s=clasificar(n,sistemas);
-    n.sistema=s.sistema; n.criticidadSistema=s.criticidad;
+    n.sistema=s.sistema; n.criticidadSistema=s.criticidad; n.cierreSinOT=s.cierreSinOT==='Sí'; n.nivelFijo=s.nivelFijo||'';
     n.impSeg=s.seguridad==='Sí'?'Sí':'No';
     n.impAmb=(s.ambiental==='Sí'||/derram|fuga|perdida de (aceite|gasoil|combustible|producto|fluido|liquido)|goteo/.test(_norm(n.descripcion)))?'Sí':'No';
   });
@@ -392,7 +402,7 @@ function calcular(F){
   const conPlazo=cerradasP.filter(n=>n.enPlazo!==null), mant=U.filter(u=>u.enMant);
   return {B,U,abiertas,periodo,cerradasP,mant,
     criticas:abiertas.filter(n=>n.nivel==='Crítica'),vencidas:abiertas.filter(n=>n.vencida),seg:abiertas.filter(n=>n.impSeg==='Sí'),
-    sinOT:abiertas.filter(n=>!n.ot),reinc:periodo.filter(n=>n.reincidente),
+    sinOT:abiertas.filter(n=>!n.ot&&!n.cierreSinOT),reinc:periodo.filter(n=>n.reincidente),
     mttr:cerradasP.length?cerradasP.reduce((a,n)=>a+n.dias,0)/cerradasP.length:0,
     enPlazo:pct(conPlazo.filter(n=>n.enPlazo).length,conPlazo.length),nPlazo:conPlazo.length,
     edadProm:abiertas.length?abiertas.reduce((a,n)=>a+n.dias,0)/abiertas.length:0,
@@ -408,7 +418,7 @@ function bars(items,color,fmtV){
 function kpi(cls,l,v,s,click){return '<div class="kpi '+cls+(click?' click':'')+'" '+(click?'onclick="'+click+'"':'')+'><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="s">'+s+'</div></div>';}
 const HEAD_NOV='<tr><th>Nivel</th><th>Score</th><th>N°</th><th>Fecha</th><th>Patente</th><th>Sistema</th><th>Novedad</th><th>Unidad</th><th>Estado</th><th>Días</th><th>SLA</th><th>OT</th></tr>';
 function filaNov(n){
-  return '<tr class="rw'+(n.vencida?' venc':'')+'" onclick="abrir('+q(n.id)+')"><td>'+(n.cerrada?nv('Cerrada'):nv(n.nivel))+'</td><td><b>'+n.score+'</b></td><td class="nw">'+esc(n.id)+'</td><td class="nw">'+fmt(n.fecha)+'</td><td class="nw"><b>'+esc(n.patente)+'</b>'+(n.reincidente?' <span class="chip a">R</span>':'')+'<div class="muted small">'+esc([n.interno!==n.patente?n.interno:'',n.tipoUnidad||'sin vincular'].filter(Boolean).join(' · '))+'</div></td><td>'+esc(n.sistema)+'</td><td>'+esc(n.descripcion.slice(0,90))+'</td><td>'+(n.condicion==='Fuera de servicio'?'<span class="chip r">En mant.</span>':'<span class="chip g">Operando</span>')+'</td><td>'+esc(n.estadoRaw)+'</td><td>'+n.dias+'</td><td class="nw">'+(n.vencida?'<span class="chip r">'+fmt(n.fCompromiso)+'</span>':fmt(n.fCompromiso))+'</td><td class="nw">'+(n.ot?esc(n.ot):(n.cerrada?'—':'<span class="chip a">Sin OT</span>'))+'</td></tr>';
+  return '<tr class="rw'+(n.vencida?' venc':'')+'" onclick="abrir('+q(n.id)+')"><td>'+(n.cerrada?nv('Cerrada'):nv(n.nivel))+'</td><td><b>'+n.score+'</b></td><td class="nw">'+esc(n.id)+'</td><td class="nw">'+fmt(n.fecha)+'</td><td class="nw"><b>'+esc(n.patente)+'</b>'+(n.reincidente?' <span class="chip a">R</span>':'')+'<div class="muted small">'+esc([n.interno!==n.patente?n.interno:'',n.tipoUnidad||'sin vincular'].filter(Boolean).join(' · '))+'</div></td><td>'+esc(n.sistema)+'</td><td>'+esc(n.descripcion.slice(0,90))+'</td><td>'+(n.condicion==='Fuera de servicio'?'<span class="chip r">En mant.</span>':'<span class="chip g">Operando</span>')+'</td><td>'+esc(n.estadoRaw)+'</td><td>'+n.dias+'</td><td class="nw">'+(n.vencida?'<span class="chip r">'+fmt(n.fCompromiso)+'</span>':fmt(n.fCompromiso))+'</td><td class="nw">'+(n.ot?esc(n.ot):(n.cerrada?'—':n.cierreSinOT?'<span class="chip">Sin OT req.</span>':'<span class="chip a">Sin OT</span>'))+'</td></tr>';
 }
 function card(n){
   return '<div class="nc '+(n.cerrada?'':n.nivel)+'" onclick="abrir('+q(n.id)+')"><div class="top"><span>'+(n.cerrada?nv('Cerrada'):nv(n.nivel))+' <span class="muted small">score '+n.score+'</span></span><span class="id">N° '+esc(n.id)+' · '+fmt(n.fecha)+'</span></div>'+
@@ -416,7 +426,7 @@ function card(n){
     '<div><b>'+esc(n.sistema)+'</b></div><div class="d">'+esc(n.descripcion)+'</div>'+
     '<div><span class="chip b">'+esc(n.estadoRaw)+'</span>'+(n.condicion==='Fuera de servicio'?'<span class="chip r">Unidad en mant.</span>':'')+'<span class="chip">'+n.dias+' d</span>'+
     (n.vencida?'<span class="chip r">Fuera de SLA</span>':'')+(n.impSeg==='Sí'?'<span class="chip r">Seguridad</span>':'')+(n.impAmb==='Sí'?'<span class="chip a">Ambiental</span>':'')+
-    (n.reincidente?'<span class="chip a">Reincidente</span>':'')+(n.ot?'<span class="chip">'+esc(n.ot)+'</span>':(n.cerrada?'':'<span class="chip a">Sin OT</span>'))+'</div></div>';
+    (n.reincidente?'<span class="chip a">Reincidente</span>':'')+(n.ot?'<span class="chip">'+esc(n.ot)+'</span>':(n.cerrada?'':n.cierreSinOT?'<span class="chip">Sin OT req.</span>':'<span class="chip a">Sin OT</span>'))+'</div></div>';
 }
 
 /* ===================== TABLERO NOVEDADES ===================== */
@@ -428,7 +438,7 @@ function renderDash(){
     kpi('N','Abiertas',K.abiertas.length,'Edad prom. '+K.edadProm.toFixed(1)+' d',"irLista('abiertas')")+
     kpi('R','Críticas abiertas',K.criticas.length,K.seg.length+' en sistemas de seguridad',"irLista('abiertas','Crítica')")+
     kpi(K.vencidas.length?'R':'G','Fuera de SLA',K.vencidas.length,pct(K.vencidas.length,K.abiertas.length)+'% de abiertas',"irLista('abiertas','','venc')")+
-    kpi(K.sinOT.length?'O':'G','Sin OT',K.sinOT.length,'abiertas sin orden de trabajo',"irLista('abiertas','','sinot')")+
+    kpi(K.sinOT.length?'O':'G','Sin OT',K.sinOT.length,'requieren OT y no la tienen',"irLista('abiertas','','sinot')")+
     kpi('R','En mantenimiento',K.mant.length,'Disponibilidad '+K.disp+'% ('+K.UE.length+' u. con estado)',"goTo('v-flota')")+
     kpi('B','Reportadas período',K.periodo.length,K.cerradasP.length+' cerradas en período')+
     kpi(K.mttr>7?'A':'G','MTTR',K.mttr.toFixed(1)+' d','tiempo medio de cierre')+
@@ -476,11 +486,11 @@ function renderReglas(){
   $('reglas').innerHTML='<div class="grid c2"><table class="rules"><tr><th>Factor (automático, sin carga manual)</th><th>Puntos</th></tr>'+
     fila('Sistema crítico / mayor / menor (por categoría o palabras clave)','3 / 2 / 1')+fila('Unidad en mantenimiento (Estado de Unidades)','4')+
     fila('Sistema con impacto en seguridad','4')+fila('Riesgo ambiental (cisterna/hidráulico o “pérdida/derrame/fuga”)','3')+fila('Prioridad alta cargada en el sistema','2')+
-    fila('Fuera de SLA','2')+fila('Antigüedad &gt; 7 días / &gt; 15 días','1 / 2')+fila('Abierta sin OT asignada','1')+fila('Reincidente (misma patente + sistema ≤ '+CFG.REINC_DIAS+' d)','2')+'</table>'+
+    fila('Reincidente (misma patente + sistema ≤ '+CFG.REINC_DIAS+' d)','2')+'<tr><th colspan="2">Agravantes de gestión (solo abiertas · suben máx. '+CFG.TOPE_NIVELES_GESTION+' nivel)</th></tr>'+fila('Fuera de SLA','2')+fila('Antigüedad &gt; 7 días / &gt; 15 días','1 / 2')+fila('Abierta sin OT (no aplica a sistemas con “Cierre sin OT”)','1')+'</table>'+
     '<table class="rules"><tr><th>Nivel</th><th>Score · SLA de cierre</th></tr>'+
     NIVELES.map((l,i)=>'<tr><td>'+nv(l)+'</td><td>'+rng[i]+' · '+CFG.SLA_DIAS[l]+' día(s)</td></tr>').join('')+
-    '<tr><td colspan="2" class="small"><b>Regla de bloqueo:</b> novedad en sistema de seguridad con la unidad operando → Crítica automática.</td></tr>'+
-    '<tr><td colspan="2" class="small">El SLA se fija con la criticidad inicial (sin antigüedad ni vencimiento) y corre desde la fecha de la novedad.</td></tr></table></div>';
+    '<tr><td colspan="2" class="small"><b>Regla de bloqueo:</b> novedad en sistema de seguridad con la unidad operando → Crítica automática.</td></tr>'+'<tr><td colspan="2" class="small"><b>Equipamiento</b> (sistemas con “Nivel fijo” en la pestaña Sistemas): nivel <b>Baja</b>; si la novedad viene con prioridad alta en CloudFleet → <b>Alta</b>. No escala por antigüedad ni por la regla de bloqueo; el atraso se ve como “Fuera de SLA”.</td></tr>'+
+    '<tr><td colspan="2" class="small">El nivel técnico (gravedad + reincidencia) fija el SLA, que corre desde la fecha de la novedad. Los agravantes de gestión pueden subir la novedad como máximo '+CFG.TOPE_NIVELES_GESTION+' nivel sobre el técnico: una falla menor atrasada se marca, pero no compite con una falla de seguridad.</td></tr></table></div>';
 }
 
 /* ===================== FLOTA ===================== */
@@ -525,7 +535,7 @@ function filtrarLista(){
     if(nl&&(n.nivel!==nl||n.cerrada)) return false; if(un&&n.un!==un) return false; if(si&&n.sistema!==si) return false;
     if(s==='venc'&&!n.vencida) return false; if(s==='fs'&&(n.condicion!=='Fuera de servicio'||n.cerrada)) return false;
     if(s==='seg'&&n.impSeg!=='Sí') return false; if(s==='reinc'&&!n.reincidente) return false;
-    if(s==='sinot'&&(n.ot||n.cerrada)) return false; if(s==='sinv'&&n.vinculada) return false;
+    if(s==='sinot'&&(n.ot||n.cerrada||n.cierreSinOT)) return false; if(s==='sinv'&&n.vinculada) return false;
     if(qq&&![n.id,n.interno,n.patente,n.descripcion,n.sistema,n.ot,n.reporta,n.tipoUnidad,n.categoria].join(' ').toLowerCase().includes(qq)) return false;
     return true;
   });
@@ -645,11 +655,11 @@ function demoInit(){
   const T=[['Frenos','Crítico','Sí','No','freno, frenos, pulmon, cinta, cintas, campana, valvula rele, perdida de aire'],['Dirección','Crítico','Sí','No','direccion, extremo, caja de direccion'],
     ['Neumáticos y llantas','Crítico','Sí','No','neumatico, cubierta, goma, llanta, rueda, tuerca de rueda'],['Suspensión y ejes','Crítico','Sí','No','suspension, elastico, bolsa de aire, amortiguador, buje'],
     ['Luces y señalización','Crítico','Sí','No','luz, luces, baliza, faro, stop'],['Seguridad activa (ADAS/DMS/telemetría)','Crítico','Sí','No','adas, dms, camara, telemetria, gps'],
-    ['Elementos de seguridad','Crítico','Sí','No','matafuego, extintor, cinturon, calza'],['Hidrogrúa / izaje','Crítico','Sí','No','hidrogrua, grua, pluma, limitador de carga'],
+    ['Elementos de seguridad','Crítico','Sí','No','matafuego, extintor, cinturon, calza, botiquin, epp, equipar','Sí'],['Hidrogrúa / izaje','Crítico','Sí','No','hidrogrua, grua, pluma, limitador de carga'],
     ['Cisterna / válvulas / mangueras','Mayor','No','Sí','cisterna, valvula, manguera, boca de hombre'],['Bomba de vacío / compresor','Mayor','No','No','bomba de vacio, vacio, compresor'],
     ['Sistema hidráulico','Mayor','No','Sí','hidraulic, toma de fuerza'],['Motor','Mayor','No','No','motor, aceite, turbo, potencia, temperatura'],['Transmisión / embrague','Mayor','No','No','caja de cambio, embrague, cardan'],
-    ['Sistema eléctrico','Mayor','No','No','electric, bateria, alternador, tablero'],['Carrocería / cabina','Menor','No','No','espejo, puerta, parabrisas, asiento'],['Otros','Menor','No','No','']];
-  const sistemas=T.map(r=>({sistema:r[0],criticidad:r[1],seguridad:r[2],ambiental:r[3],claves:r[4].split(',').map(_norm).filter(Boolean)}));
+    ['Sistema eléctrico','Mayor','No','No','electric, bateria, alternador, tablero'],['Carrocería / cabina','Menor','No','No','espejo, puerta, parabrisas, asiento'],['Accesorios / equipamiento','Menor','No','No','accesorio, caja de herramientas, soporte','Sí'],['Otros','Menor','No','No','']];
+  const sistemas=T.map(r=>({sistema:r[0],criticidad:r[1],seguridad:r[2],ambiental:r[3],claves:r[4].split(',').map(_norm).filter(Boolean),cierreSinOT:r[5]==='Sí'?'Sí':'No',nivelFijo:r[5]==='Sí'?'Baja':''}));
   const L='ABCDEFGHJKLMNPRSTUVWXYZ', hoy=_d(_iso(new Date()));
   const tipos=[['TR','Tractor'],['ST','Semi Tanque'],['CH','Chupa 30 m³'],['CH','Chupa 9 m³'],['EV','Equipo de vacío'],['PC','Portacontenedor'],['HG','Hidrogrúa']];
   const uns=['YPF','YPF','YPF','RAIZEN','SHELL','SPOT'];
