@@ -91,6 +91,38 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
 #toast.err{background:var(--R)}#toast.ok{background:var(--G)}
 #loader{position:fixed;inset:0;background:rgba(244,245,247,.8);display:none;align-items:center;justify-content:center;z-index:98;font-weight:700}
 .empty{padding:20px;text-align:center;color:var(--GT)}
+/* Filtros globales */
+.gf{max-width:1320px;margin:0 auto;padding:14px 14px 12px}
+.gf .card{margin-bottom:0}
+.gf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;align-items:end}
+.gf-grid label{font-size:11px;color:var(--GT);font-weight:600;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px}
+.gf-grid .gs{grid-column:span 2;position:relative}
+@media(max-width:600px){.gf-grid .gs{grid-column:1/-1}}
+.gf-act{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:8px;flex-wrap:wrap}
+.gf-act .help{margin:0}
+#gSug{position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--BO);border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.12);z-index:60;display:none;max-height:340px;overflow:auto}
+#gSug div{padding:8px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid #f0f1f4}
+#gSug div:hover,#gSug div.on{background:#f4f5f7}
+#gSug b{font-weight:700}#gSug .t{display:inline-block;min-width:66px;font-size:10.5px;font-weight:700;color:#fff;border-radius:3px;padding:1px 6px;margin-right:6px;text-align:center}
+.ms{position:relative}
+.ms-btn{width:100%;text-align:left;font:inherit;font-size:14px;padding:7px 26px 7px 8px;border:1px solid var(--BO);border-radius:6px;background:#fff;color:var(--N);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative}
+.ms-btn::after{content:"▾";position:absolute;right:9px;top:50%;transform:translateY(-50%);color:var(--GT)}
+.ms-btn.act{border-color:var(--R);box-shadow:inset 3px 0 0 var(--R);font-weight:700}
+.ms-pan{position:absolute;left:0;top:100%;margin-top:3px;min-width:100%;width:max-content;max-width:320px;background:#fff;border:1px solid var(--BO);border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.14);z-index:70;display:none;padding:8px}
+.ms.open .ms-pan{display:block}
+.ms-pan input[type=text]{font-size:13px;padding:6px 8px;margin-bottom:6px}
+.ms-lnk{display:flex;gap:12px;font-size:12px;margin-bottom:6px}.ms-lnk a{color:var(--B);cursor:pointer;text-decoration:underline}
+.ms-list{max-height:260px;overflow:auto}
+.ms-list label{display:flex!important;gap:7px;align-items:center;font-size:13px!important;text-transform:none!important;letter-spacing:0!important;color:var(--N)!important;font-weight:400!important;padding:4px 2px;cursor:pointer;margin:0!important}
+.ms-list input{width:auto}
+/* Matriz mensual por creador */
+table.hm{border-collapse:collapse;font-size:12px;width:100%}
+table.hm th{background:var(--N);color:#fff;padding:6px;font-weight:600;font-size:11px;white-space:nowrap;position:sticky;top:0}
+table.hm td{padding:5px 6px;border-bottom:1px solid var(--BO);text-align:center;white-space:nowrap}
+table.hm td.n{text-align:left;font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+table.hm td .c{display:block;border-radius:3px;padding:3px 2px;font-weight:700;color:#fff}
+table.hm td small{display:block;color:var(--GT);font-size:10px}
+table.hm tr.tot td{border-top:2px solid var(--N);font-weight:700}
 </style>
 </head>
 <body>
@@ -101,9 +133,31 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
   <span class="h-upd" id="hUpd"></span>
   <button class="h-btn sm" onclick="cargar(true)" title="Actualizar datos">⟳</button>
 </header>
+
+
+<!-- ======================= FILTROS GLOBALES (todas las pestañas) ======================= -->
+<section class="gf" id="gf">
+  <div class="card">
+    <div class="gf-grid">
+      <div class="gs"><label>Buscar patente / N° OT / N° novedad</label><input id="gQ" placeholder="Ej.: AA014GT · 12345 · interno" autocomplete="off" oninput="gBuscar()" onkeydown="gTecla(event)"><div id="gSug"></div></div>
+      <div><label>Desde</label><input type="date" id="gDesde" onchange="onFiltro()"></div>
+      <div><label>Hasta</label><input type="date" id="gHasta" onchange="onFiltro()"></div>
+      <div data-tabs="v-dash v-flota v-ot v-lista"><label>Centro de costos</label><div class="ms" id="ms-cc"></div></div>
+      <div data-tabs="v-dash v-flota v-ot v-lista"><label>Tipo de unidad</label><div class="ms" id="ms-tipo"></div></div>
+      <div data-tabs="v-dash v-flota v-ot v-lista"><label>Patente</label><div class="ms" id="ms-pat"></div></div>
+      <div data-tabs="v-dash v-lista"><label>Sistema</label><div class="ms" id="ms-sis"></div></div>
+      <div data-tabs="v-dash v-lista"><label>Criticidad</label><div class="ms" id="ms-niv"></div></div>
+      <div data-tabs="v-ot"><label>Tipo de OT</label><div class="ms" id="ms-tot"></div></div>
+      <div data-tabs="v-ot"><label>Taller / proveedor</label><div class="ms" id="ms-tal"></div></div>
+      <div data-tabs="v-ot"><label>Creador de la OT</label><div class="ms" id="ms-cre"></div></div>
+    </div>
+    <div class="gf-act"><p class="help" id="gfResumen">Sin filtros</p><button class="btn lt" onclick="limpiarFiltros()">Limpiar filtros</button></div>
+  </div>
+</section>
 <nav class="tabs">
   <button data-v="v-dash" onclick="goTo('v-dash')">Novedades</button>
   <button data-v="v-flota" onclick="goTo('v-flota')">Estado de flota</button>
+  <button data-v="v-ot" onclick="goTo('v-ot')">Órdenes de trabajo</button>
   <button data-v="v-lista" onclick="goTo('v-lista')">Listado</button>
 </nav>
 
@@ -111,16 +165,9 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
 <main class="wide view" id="v-dash">
   <div id="demoBanner" class="demo" style="display:none">Modo DEMO: datos de ejemplo. Para conectar, pegar la URL /exec del Apps Script en la constante <b>API_URL</b>.</div>
   <div id="diagBanner" class="warn" style="display:none"></div>
-  <div class="card">
-    <div class="filters">
-      <div><label>Desde</label><input type="date" id="fDesde" onchange="renderDash()"></div>
-      <div><label>Hasta</label><input type="date" id="fHasta" onchange="renderDash()"></div>
-      <div><label>Centro de costos</label><select id="fUN" onchange="renderDash()"></select></div>
-      <div><label>Tipo de unidad</label><select id="fTipo" onchange="renderDash()"></select></div>
-      <div><label>Sistema</label><select id="fSistema" onchange="renderDash()"></select></div>
-      <div class="btnrow"><button class="btn r" onclick="exportarPDF()">PDF</button><button class="btn lt" onclick="exportarCSV()">CSV</button></div>
-    </div>
-    <p class="help" id="dashNota"></p>
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+    <p class="help" id="dashNota" style="margin:0;flex:1"></p>
+    <div class="btnrow"><button class="btn r" onclick="exportarPDF()">PDF</button><button class="btn lt" onclick="exportarCSV()">CSV</button></div>
   </div>
   <div class="kpis" id="kpis"></div>
   <div class="card">
@@ -128,7 +175,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
     <div id="topCrit"></div>
   </div>
   <div class="card">
-    <h3>Evolución mensual de novedades <small>(por mes de reporte · estado actual · últimos 12 meses · respeta filtros de centro de costos, tipo y sistema)</small></h3>
+    <h3>Evolución mensual de novedades <small>(por mes de reporte · estado actual · últimos 12 meses · respeta los filtros generales salvo el período)</small></h3>
     <div class="mscroll"><div id="chMes"></div></div>
     <div class="legend" style="display:flex;flex-wrap:wrap;gap:14px;margin-top:6px"><div><i style="background:var(--G)"></i>Cerradas (% del mes)</div><div><i style="background:var(--R)"></i>Abiertas (% del mes)</div><div><i style="background:var(--N);height:3px;margin-top:5px"></i>Total reportadas</div></div>
   </div>
@@ -158,13 +205,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
 <!-- ======================= ESTADO DE FLOTA ======================= -->
 <main class="wide view" id="v-flota">
   <div class="card">
-    <div class="filters">
-      <div><label>Centro de costos</label><select id="uUN" onchange="renderFlota()"></select></div>
-      <div><label>Tipo de unidad</label><select id="uTipo" onchange="renderFlota()"></select></div>
-      <div><label>Taller</label><select id="uTaller" onchange="renderFlota()"></select></div>
-      <div style="grid-column:span 2"><label>Buscar</label><input id="uQ" placeholder="Patente, interno, OT, detalle…" oninput="renderFlota()"></div>
-    </div>
-    <p class="help">Fuente: "Estado de Unidades General". Datos de la unidad: <b>BD-VEHICULOS</b> (Análisis Preventivos, solo activas). Estado: <b>Estado de Unidades General</b>; cuenta como <b>en mantenimiento</b> cuando su ESTADO no es DISPONIBLE / OPERATIVA.</p>
+    <p class="help" style="margin:0">Fuente: "Estado de Unidades General". Datos de la unidad: <b>BD-VEHICULOS</b> (Análisis Preventivos, solo activas). Estado: <b>Estado de Unidades General</b>; cuenta como <b>en mantenimiento</b> cuando su ESTADO no es DISPONIBLE / OPERATIVA. Usa los filtros generales (centro de costos, tipo, patente).</p>
   </div>
   <div class="kpis" id="fkpis"></div>
   <div class="card">
@@ -182,15 +223,58 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
   </div>
 </main>
 
+<!-- ======================= ÓRDENES DE TRABAJO ======================= -->
+<main class="wide view" id="v-ot">
+  <div class="card">
+    <div class="filters">
+      <div style="grid-column:span 2"><label>Ver en el listado</label><select id="oEst" onchange="renderOT()">
+        <option value="pend">Sin cierre final (abiertas + cierre técnico)</option><option value="Abierta">Abiertas</option><option value="Cierre técnico">En cierre técnico</option>
+        <option value="tecv">Cierre técnico vencido</option><option value="vest">Vencidas vs fecha estimada</option><option value="afd">Afectan disponibilidad</option>
+        <option value="Cerrada">Cerradas en período</option><option value="Anulada">Anuladas en período</option><option value="todas">Todas</option></select></div>
+      <div class="btnrow"><button class="btn lt" onclick="exportarOTCSV()">CSV</button></div>
+    </div>
+    <p class="help"><b>Criterio de cierre:</b> una OT —y la novedad asociada— está cerrada solo con el <b>cierre final</b> (estado Cerrada). <b>Cierre técnico</b> = trabajo terminado sin cierre administrativo: se cuenta como abierta. Anuladas fuera de indicadores. El período (desde/hasta) aplica a creadas, cerradas, MTTR y % de cierre por creador; los gráficos mensuales muestran siempre los últimos 12 meses.</p>
+  </div>
+  <div class="kpis" id="okpis"></div>
+  <div class="card">
+    <h3>Evolución mensual de OT por estado <small>(por mes de creación · estado actual · últimos 12 meses · anuladas aparte)</small></h3>
+    <div class="mscroll"><div id="oMesEst"></div></div>
+    <div class="legend" style="display:flex;flex-wrap:wrap;gap:14px;margin-top:6px"><div><i style="background:var(--G)"></i>Cerrada (cierre final)</div><div><i style="background:var(--A)"></i>Cierre técnico</div><div><i style="background:var(--R)"></i>Abierta</div><div><i style="background:#b8bcc6"></i>Anulada</div><div><i style="background:var(--N);height:3px;margin-top:5px"></i>Total creadas</div></div>
+  </div>
+  <div class="card">
+    <h3>Flujo mensual de OT <small>(cantidad de eventos en cada mes · últimos 12 meses)</small></h3>
+    <div class="mscroll"><div id="oMesFlujo"></div></div>
+    <div class="legend" style="display:flex;flex-wrap:wrap;gap:14px;margin-top:6px"><div><i style="background:var(--B)"></i>Creadas</div><div><i style="background:var(--A)"></i>Cierre técnico</div><div><i style="background:var(--G)"></i>Cierre final</div><div><i style="background:var(--N);height:3px;margin-top:5px"></i>Backlog sin cierre final a fin de mes</div></div>
+  </div>
+  <div class="card">
+    <h3>% de cierre final por creador de la OT <small>(OT creadas en el período, sin anuladas · clic en un nombre para filtrar)</small></h3>
+    <div id="oCreTabla"></div>
+  </div>
+  <div class="card">
+    <h3>Evolución mensual del % de cierre final por creador <small>(OT creadas en cada mes, sin anuladas · % con cierre final hoy · n = cantidad)</small></h3>
+    <div class="tscroll" id="oCreMes" style="max-height:none"></div>
+    <p class="help">Verde ≥ 90% · Ámbar 70–89% · Rojo &lt; 70%. Los meses más recientes tienen naturalmente menor % porque hay OT todavía en curso.</p>
+  </div>
+  <div class="card"><h3>Coherencia de datos <small>(desvíos para corregir en CloudFleet / Estado de Unidades)</small></h3><div id="oCoh"></div></div>
+  <div class="card"><h3 id="oTit">Órdenes de trabajo</h3><div class="only-desk"><div class="tscroll" id="oTabla"></div></div><div class="only-mob" id="oCards"></div><p class="help" id="oCount"></p></div>
+  <div class="grid c3">
+    <div class="card"><h3>Antigüedad sin cierre final <small>(desde ingreso a taller)</small></h3><div id="oAging"></div></div>
+    <div class="card"><h3>Cierre técnico sin cierre final <small>(días desde cierre técnico)</small></h3><div id="oTec"></div></div>
+    <div class="card"><h3>Sin cierre final por taller</h3><div id="oTalleres"></div></div>
+  </div>
+  <div class="grid c3">
+    <div class="card"><h3>Por tipo de OT <small>(sin cierre final / creadas período)</small></h3><div id="oTipos"></div></div>
+    <div class="card"><h3>Por centro de costos <small>(sin cierre final / creadas período)</small></h3><div id="oCCs"></div></div>
+    <div class="card"><h3>Sin cierre final por creador</h3><div id="oCreadores"></div></div>
+  </div>
+</main>
+
 <!-- ======================= LISTADO ======================= -->
 <main class="wide view" id="v-lista">
   <div class="card">
     <div class="filters">
-      <div style="grid-column:span 2"><label>Buscar</label><input id="lQ" placeholder="Patente, interno, N°, descripción, OT…" oninput="renderLista()"></div>
+      <div style="grid-column:span 2"><label>Texto en la novedad</label><input id="lQ" placeholder="Descripción, sistema, reportó…" oninput="renderLista()"></div>
       <div><label>Estado</label><select id="lEstado" onchange="renderLista()"></select></div>
-      <div><label>Criticidad</label><select id="lNivel" onchange="renderLista()"><option value="">Todas</option><option>Crítica</option><option>Alta</option><option>Media</option><option>Baja</option></select></div>
-      <div><label>Centro de costos</label><select id="lUN" onchange="renderLista()"></select></div>
-      <div><label>Sistema</label><select id="lSis" onchange="renderLista()"></select></div>
       <div><label>Solo</label><select id="lSolo" onchange="renderLista()"><option value="">—</option><option value="venc">Fuera de SLA</option><option value="fs">Unidad en mantenimiento</option><option value="seg">Impacto seguridad</option><option value="reinc">Reincidentes</option><option value="sinot">Sin OT</option><option value="sinv">Sin vincular a unidad</option></select></div>
       <div><label>Orden</label><select id="lOrden" onchange="renderLista()"><option value="score">Criticidad</option><option value="dias">Antigüedad</option><option value="fecha">Más recientes</option></select></div>
     </div>
@@ -202,6 +286,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
 
 <main class="view" id="v-det"><div id="detInfo"></div></main>
 <main class="view" id="v-unidad"><div id="uniInfo"></div></main>
+<main class="view" id="v-otdet"><div id="otInfo"></div></main>
 
 <div id="toast"></div><div id="loader">Cargando datos de CloudFleet y Estado de Unidades…</div>
 <canvas id="cvPie" width="400" height="400" style="display:none"></canvas>
@@ -365,11 +450,11 @@ function enriquecer(issues, flota, sistemas, hoy) {
 }
 
 /* ===================== ESTADO GLOBAL ===================== */
-let ISS=[], UNI=[], SIS=[], HOY=null, DIAG=null, CUR=null, HIST=[];
+let ISS=[], UNI=[], SIS=[], OTS=[], OT_L=[], UIDX={}, HOY=null, DIAG=null, CUR=null, HIST=[];
 const NIVELES=['Crítica','Alta','Media','Baja'];
 const NORD={'Crítica':0,'Alta':1,'Media':2,'Baja':3};
 const COLN={'Crítica':'#C00000','Alta':'#E07B39','Media':'#EF9F27','Baja':'#1D9E75'};
-const TITULOS={'v-dash':'Score de Mantenimiento · Novedades','v-flota':'Score de Mantenimiento · Estado de flota','v-lista':'Novedades · Listado','v-det':'Detalle de novedad','v-unidad':'Ficha de unidad'};
+const TITULOS={'v-dash':'Score de Mantenimiento · Novedades','v-flota':'Score de Mantenimiento · Estado de flota','v-lista':'Novedades · Listado','v-ot':'Score de Mantenimiento · Órdenes de trabajo','v-det':'Detalle de novedad','v-otdet':'Detalle de orden de trabajo','v-unidad':'Ficha de unidad'};
 
 /* ===================== UTILIDADES ===================== */
 const $=id=>document.getElementById(id);
@@ -389,18 +474,21 @@ function flotaActiva(){return UNI.filter(u=>u.activo!==false);}
 function abiertasDe(u){return ISS.filter(n=>!n.cerrada&&_key(n.patente)===_key(u.patente));}
 function peorNivel(arr){return arr.length?arr.slice().sort((a,b)=>NORD[a.nivel]-NORD[b.nivel])[0].nivel:null;}
 
+const VDET=['v-det','v-unidad','v-otdet'];
 function goTo(v,push){
   const cur=document.querySelector('.view.on');
-  if(push!==false&&cur&&cur.id!==v&&(v==='v-det'||v==='v-unidad')) HIST.push({v:cur.id,id:CUR});
-  if(v!=='v-det'&&v!=='v-unidad') HIST=[];
+  if(push!==false&&cur&&cur.id!==v&&VDET.includes(v)) HIST.push({v:cur.id,id:CUR});
+  if(!VDET.includes(v)) HIST=[];
   document.querySelectorAll('.view').forEach(x=>x.classList.toggle('on',x.id===v));
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
   $('hTitle').textContent=TITULOS[v];
-  $('btnBack').style.display=(v==='v-det'||v==='v-unidad')?'inline-block':'none';
-  if(v==='v-dash') renderDash(); if(v==='v-lista') renderLista(); if(v==='v-flota') renderFlota();
+  $('btnBack').style.display=VDET.includes(v)?'inline-block':'none';
+  $('gf').style.display=VDET.includes(v)?'none':'block';
+  document.querySelectorAll('#gf [data-tabs]').forEach(x=>x.style.display=x.dataset.tabs.split(' ').includes(v)?'':'none');
+  if(v==='v-dash') renderDash(); if(v==='v-lista') renderLista(); if(v==='v-flota') renderFlota(); if(v==='v-ot') renderOT();
   window.scrollTo(0,0);
 }
-function volver(){const p=HIST.pop()||{v:'v-dash'}; if(p.v==='v-det'&&p.id) abrir(p.id,false); else if(p.v==='v-unidad'&&p.id) abrirUnidad(p.id,false); else goTo(p.v,false);}
+function volver(){const p=HIST.pop()||{v:'v-dash'}; if(p.v==='v-det'&&p.id) abrir(p.id,false); else if(p.v==='v-unidad'&&p.id) abrirUnidad(p.id,false); else if(p.v==='v-otdet'&&p.id) abrirOT(p.id,false); else goTo(p.v,false);}
 
 /* ===================== API ===================== */
 async function api(action){
@@ -415,16 +503,19 @@ async function cargar(forzar){
   loader(true);
   try{
     const r=await api('datos');
-    ISS=r.issues; UNI=r.unidades; HOY=_d(r.hoy); DIAG=r.diag||{}; SIS=r.sistemas;
+    ISS=r.issues; UNI=r.unidades; HOY=_d(r.hoy); DIAG=r.diag||{}; SIS=r.sistemas; OTS=r.ots||[];
+    UIDX={}; UNI.forEach(u=>{UIDX[_key(u.patente)]=u; if(u.interno&&!UIDX[_key(u.interno)]) UIDX[_key(u.interno)]=u;});
     if(r.criterios) aplicarCriterios(r.criterios);
     poblarFiltros();
-    $('hUpd').textContent='Datos '+r.generado+(DIAG.ultimaSync?' · Sync CloudFleet '+DIAG.ultimaSync:'');
+    $('hUpd').textContent='Datos '+r.generado+(DIAG.ultimaSync?' · Sync novedades '+DIAG.ultimaSync:'')+(DIAG.ultimaSyncOT?' · Sync OT '+DIAG.ultimaSyncOT:'');
     const d=[];
     if(DIAG.vehiculosCargados===0) d.push('Falta la pestaña VEHICULOS (BD-VEHICULOS de CloudFleet): sin ella el cruce depende solo de Estado de Unidades.');
     if(DIAG.sinVincular) d.push(DIAG.sinVincular+' novedades de vehículos que no existen en la flota de CloudFleet ni en Estado de Unidades. Ej.: '+(DIAG.ejemplosSinVincular||[]).slice(0,8).join(', '));
     if(DIAG.sinEstado) d.push(DIAG.sinEstado+' novedades de vehículos de CloudFleet sin fila en Estado de Unidades (se toman como operativos). Ej.: '+(DIAG.ejemplosSinEstado||[]).slice(0,8).join(', '));
     if(DIAG.cf) d.push('Validación CloudFleet (CF_PENDIENTES: '+DIAG.cf.cargados+' pendientes exportadas, hasta N° '+DIAG.cf.maxNumero+'): de '+DIAG.cf.abiertasIsDone+' con isDone=FALSE → '+DIAG.cf.confirmadasCF+' confirmadas + '+DIAG.cf.nuevasPostCF+' posteriores a la exportación se cuentan abiertas; '+DIAG.cf.sinPendienteCF+' excluidas por no figurar pendientes en CloudFleet.');
     else if(API_URL) d.push('Pendientes según isDone SIN validar contra CloudFleet (pestaña CF_PENDIENTES vacía): el total de abiertas puede estar sobreestimado.');
+    if(DIAG.cruceOT){const c=DIAG.cruceOT; d.push('Cruce novedades ↔ OT: '+c.conOT+' novedades con OT ('+c.otEncontrada+' encontradas, '+c.otNoEncontrada+' sin la OT en la pestaña OT) → '+c.cerradasPorOT+' cerradas por cierre final de OT · '+c.abiertasPorOT+' abiertas por OT sin cierre final'+(c.reabiertas?' (de ellas '+c.reabiertas+' figuraban como hechas en CloudFleet)':'')+(c.otAnulada?' · '+c.otAnulada+' con OT anulada (rige isDone)':'')+'.');}
+    if(API_URL&&DIAG.otCargadas===0) d.push('Pestaña OT vacía: ejecutar sincronizarOT() en el editor de Apps Script.');
     if(DIAG.erroresCriterios&&DIAG.erroresCriterios.length) d.push('Matriz de criterios: '+DIAG.erroresCriterios.join(' · '));
     if(DIAG.columnasNoEncontradas&&DIAG.columnasNoEncontradas.length) d.push('Columnas esenciales de ISSUE no reconocidas: '+DIAG.columnasNoEncontradas.join(', ')+' (ver ?action=mapeo).');
     $('diagBanner').style.display=d.length?'block':'none'; $('diagBanner').innerHTML=d.map(esc).join('<br>');
@@ -434,22 +525,95 @@ async function cargar(forzar){
   loader(false);
 }
 function poblarFiltros(){
-  const FA=flotaActiva(), uns=uniq(FA.map(u=>u.un)), tipos=uniq(FA.map(u=>u.tipo)), sis=SIS.map(s=>s.sistema);
-  opts('fUN',uns,'Todas');opts('fTipo',tipos,'Todos');opts('fSistema',sis,'Todos');
-  opts('uUN',uns,'Todas');opts('uTipo',tipos,'Todos');opts('uTaller',uniq(FA.map(u=>u.taller)),'Todos');
-  opts('lUN',uns,'Todas');opts('lSis',sis,'Todos');
+  const FA=flotaActiva();
+  msInit('cc',uniq([...FA.map(u=>u.un),...OTS.map(o=>ccOT(o))]),'Todos');
+  msInit('tipo',uniq(FA.map(u=>u.tipo)),'Todos');
+  msInit('pat',uniq([...FA.map(u=>u.patente),...OTS.map(o=>o.patente),...ISS.map(n=>n.patente)]),'Todas');
+  msInit('sis',SIS.map(s=>s.sistema),'Todos');
+  msInit('niv',NIVELES.slice(),'Todas');
+  msInit('tot',uniq(OTS.map(o=>o.tipo)),'Todos');
+  msInit('tal',uniq(OTS.map(o=>o.taller)),'Todos');
+  msInit('cre',uniq(OTS.map(o=>o.creadaPor)),'Todos');
   const ests=uniq(ISS.map(n=>n.estadoRaw)), lv=$('lEstado').value;
   $('lEstado').innerHTML='<option value="abiertas">Abiertas (todas)</option><option value="">Todos</option>'+ests.map(e=>'<option>'+esc(e)+'</option>').join('');
   if(lv) $('lEstado').value=lv;
   renderReglas();
 }
 
+/* ===================== FILTROS GLOBALES (multiselección) ===================== */
+const MS={};
+const MS_LBL={cc:'Centro de costos',tipo:'Tipo de unidad',pat:'Patente',sis:'Sistema',niv:'Criticidad',tot:'Tipo de OT',tal:'Taller',cre:'Creador OT'};
+function msInit(k,opciones,todos){
+  const prev=MS[k]?MS[k].sel:new Set();
+  MS[k]={opts:opciones,sel:new Set([...prev].filter(x=>opciones.includes(x))),todos,q:''};
+  $('ms-'+k).innerHTML='<button type="button" class="ms-btn" onclick="msToggle(\''+k+'\',event)"></button><div class="ms-pan" onclick="event.stopPropagation()">'+
+    (opciones.length>8?'<input type="text" placeholder="Buscar…" oninput="MS[\''+k+'\'].q=this.value;msLista(\''+k+'\')">':'')+
+    '<div class="ms-lnk"><a onclick="msTodos(\''+k+'\',true)">Marcar todos</a><a onclick="msTodos(\''+k+'\',false)">Quitar selección</a></div><div class="ms-list"></div></div>';
+  msLista(k); msBtn(k);
+}
+function msLista(k){
+  const m=MS[k], qq=_norm(m.q), L=m.opts.filter(o=>!qq||_norm(o).includes(qq));
+  $('ms-'+k).querySelector('.ms-list').innerHTML=L.slice(0,400).map(o=>'<label><input type="checkbox" '+(m.sel.has(o)?'checked':'')+' onchange="msCambio(\''+k+'\','+esc(JSON.stringify(o))+',this.checked)">'+esc(o)+'</label>').join('')+(L.length>400?'<p class="help">… refiná la búsqueda</p>':'')+(L.length?'':'<p class="help">Sin opciones</p>');
+}
+function msBtn(k){const m=MS[k],b=$('ms-'+k).querySelector('.ms-btn'),n=m.sel.size;b.textContent=!n?m.todos:n===1?[...m.sel][0]:n+' seleccionados';b.classList.toggle('act',n>0);b.title=[...m.sel].join(', ');}
+function msToggle(k,ev){ev.stopPropagation();const el=$('ms-'+k),ab=!el.classList.contains('open');document.querySelectorAll('.ms.open').forEach(x=>x.classList.remove('open'));if(ab){el.classList.add('open');const i=el.querySelector('input[type=text]');if(i)i.focus();}}
+function msCambio(k,v,on){const m=MS[k];on?m.sel.add(v):m.sel.delete(v);msBtn(k);onFiltro();}
+function msTodos(k,on){const m=MS[k],qq=_norm(m.q);m.opts.filter(o=>!qq||_norm(o).includes(qq)).forEach(o=>on?m.sel.add(o):m.sel.delete(o));msLista(k);msBtn(k);onFiltro();}
+function msVal(k){return MS[k]?[...MS[k].sel]:[];}
+function msSet(k,arr){if(!MS[k])return;MS[k].sel=new Set(arr.filter(x=>MS[k].opts.includes(x)));msLista(k);msBtn(k);}
+document.addEventListener('click',()=>document.querySelectorAll('.ms.open').forEach(x=>x.classList.remove('open')));
+function inSel(a,v){return !a.length||a.includes(v);}
+function GF(){return {desde:$('gDesde').value,hasta:$('gHasta').value,cc:msVal('cc'),tipo:msVal('tipo'),pat:msVal('pat').map(_key),sis:msVal('sis'),niv:msVal('niv'),tot:msVal('tot'),tal:msVal('tal'),cre:msVal('cre')};}
+function patOK(F,p){return !F.pat.length||F.pat.includes(_key(p));}
+function uDe(p){return UIDX[_key(p)]||null;}
+function ccOT(o){const u=uDe(o.patente);return (u&&u.un)||o.cc||'';}
+function tipoOT(o){const u=uDe(o.patente);return u?u.tipo:'';}
+let _tf=null;
+function onFiltro(){
+  clearTimeout(_tf);
+  _tf=setTimeout(()=>{
+    const F=GF(), p=[];
+    if(F.desde||F.hasta) p.push('Período '+fmt(F.desde)+' a '+fmt(F.hasta));
+    Object.keys(MS_LBL).forEach(k=>{const v=msVal(k);if(v.length)p.push(MS_LBL[k]+': '+(v.length>3?v.slice(0,3).join(', ')+' +'+(v.length-3):v.join(', ')));});
+    $('gfResumen').textContent=p.join(' · ')||'Sin filtros';
+    const v=document.querySelector('.view.on'); if(v&&!VDET.includes(v.id)) goTo(v.id,false);
+  },120);
+}
+function limpiarFiltros(){Object.keys(MS).forEach(k=>msSet(k,[]));const h=new Date(),d=new Date(h);d.setDate(d.getDate()-89);$('gDesde').value=_iso(d);$('gHasta').value=_iso(h);onFiltro();}
+function filtrosTexto(){return $('gfResumen').textContent;}
+
+/* ===================== BUSCADOR GLOBAL ===================== */
+let _sug=[], _sugI=0;
+function gBuscar(){
+  const v=$('gQ').value.trim(), k=_key(v), box=$('gSug');
+  if(k.length<2){box.style.display='none';_sug=[];return;}
+  const U=UNI.filter(u=>_key(u.patente).includes(k)||(u.interno&&_key(u.interno).includes(k))).sort((a,b)=>(_key(b.patente)===k)-(_key(a.patente)===k)).slice(0,6)
+    .map(u=>({t:'Unidad',c:'#1a1a1a',txt:'<b>'+esc(u.patente)+'</b> '+esc([u.interno!==u.patente?u.interno:'',u.tipo,u.un].filter(Boolean).join(' · ')),go:()=>abrirUnidad(u.patente)}));
+  const O=OTS.filter(o=>o.numero.indexOf(k)===0).sort((a,b)=>(b.numero===k)-(a.numero===k)||a.numero.length-b.numero.length).slice(0,6)
+    .map(o=>({ex:o.numero===k,t:'OT',c:'#378ADD',txt:'<b>OT '+esc(o.numero)+'</b> · '+esc(o.patente)+' · '+esc(o.estado),go:()=>abrirOT(o.numero)}));
+  const N=ISS.filter(n=>String(n.id).indexOf(v)===0).sort((a,b)=>(String(b.id)===v)-(String(a.id)===v)||String(a.id).length-String(b.id).length).slice(0,6)
+    .map(n=>({ex:String(n.id)===v,t:'Novedad',c:'#C00000',txt:'<b>N° '+esc(n.id)+'</b> · '+esc(n.patente)+' · '+esc(n.descripcion.slice(0,60)),go:()=>abrir(n.id)}));
+  // Si es un número: primero coincidencias exactas de OT / novedad, después parciales, al final unidades
+  const R=/^\d+$/.test(v)?[...O.filter(x=>x.ex),...N.filter(x=>x.ex),...O.filter(x=>!x.ex),...N.filter(x=>!x.ex),...U]:[...U,...O,...N];
+  _sug=R;_sugI=0;
+  box.innerHTML=R.length?R.map((r,i)=>'<div class="'+(i?'':'on')+'" onmousedown="gIr('+i+')"><span class="t" style="background:'+r.c+'">'+r.t+'</span>'+r.txt+'</div>').join(''):'<div class="muted">Sin coincidencias</div>';
+  box.style.display='block';
+}
+function gIr(i){const r=_sug[i];if(!r)return;$('gSug').style.display='none';$('gQ').value='';$('gQ').blur();r.go();}
+function gTecla(e){
+  const box=$('gSug');
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){if(!_sug.length)return;e.preventDefault();_sugI=(_sugI+(e.key==='ArrowDown'?1:-1)+_sug.length)%_sug.length;[...box.children].forEach((d,i)=>d.classList.toggle('on',i===_sugI));}
+  else if(e.key==='Enter'){e.preventDefault();gIr(_sugI);}
+  else if(e.key==='Escape'){box.style.display='none';}
+}
+document.addEventListener('click',e=>{if(e.target.id!=='gQ')$('gSug').style.display='none';});
+
 /* ===================== CÁLCULOS ===================== */
-function filtrosDash(){return {desde:$('fDesde').value,hasta:$('fHasta').value,un:$('fUN').value,tipo:$('fTipo').value,sistema:$('fSistema').value};}
+function filtrosDash(){return GF();}
 function enRango(iso,F){return iso&&(!F.desde||iso>=F.desde)&&(!F.hasta||iso<=F.hasta);}
 function calcular(F){
-  const B=vivas().filter(n=>(!F.un||n.un===F.un)&&(!F.tipo||n.tipoUnidad===F.tipo)&&(!F.sistema||n.sistema===F.sistema));
-  const U=flotaActiva().filter(u=>(!F.un||u.un===F.un)&&(!F.tipo||u.tipo===F.tipo)), UE=U.filter(u=>u.tieneEstado!==false);
+  const B=vivas().filter(n=>inSel(F.cc,n.un)&&inSel(F.tipo,n.tipoUnidad)&&inSel(F.sis,n.sistema)&&inSel(F.niv,n.nivel)&&patOK(F,n.patente));
+  const U=flotaActiva().filter(u=>inSel(F.cc,u.un)&&inSel(F.tipo,u.tipo)&&patOK(F,u.patente)), UE=U.filter(u=>u.tieneEstado!==false);
   const abiertas=B.filter(n=>!n.cerrada), periodo=B.filter(n=>enRango(n.fecha,F)), cerradasP=B.filter(n=>n.cerrada&&enRango(n.fCierre,F));
   const conPlazo=cerradasP.filter(n=>n.enPlazo!==null), mant=U.filter(u=>u.enMant);
   return {B,U,abiertas,periodo,cerradasP,mant,
@@ -470,7 +634,7 @@ function bars(items,color,fmtV){
 function kpi(cls,l,v,s,click){return '<div class="kpi '+cls+(click?' click':'')+'" '+(click?'onclick="'+click+'"':'')+'><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="s">'+s+'</div></div>';}
 const HEAD_NOV='<tr><th>Nivel</th><th>Score</th><th>N°</th><th>Fecha</th><th>Patente</th><th>Sistema</th><th>Novedad</th><th>Unidad</th><th>Estado</th><th>Días</th><th>SLA</th><th>OT</th></tr>';
 function filaNov(n){
-  return '<tr class="rw'+(n.vencida?' venc':'')+'" onclick="abrir('+q(n.id)+')"><td>'+(n.cerrada?nv('Cerrada'):nv(n.nivel))+'</td><td><b>'+n.score+'</b></td><td class="nw">'+esc(n.id)+'</td><td class="nw">'+fmt(n.fecha)+'</td><td class="nw"><b>'+esc(n.patente)+'</b>'+(n.reincidente?' <span class="chip a">R</span>':'')+'<div class="muted small">'+esc([n.interno!==n.patente?n.interno:'',n.tipoUnidad||'sin vincular'].filter(Boolean).join(' · '))+'</div></td><td>'+esc(n.sistema)+'</td><td>'+esc(n.descripcion.slice(0,90))+'</td><td>'+(n.condicion==='Fuera de servicio'?'<span class="chip r">En mant.</span>':'<span class="chip g">Operando</span>')+'</td><td>'+esc(n.estadoRaw)+'</td><td>'+n.dias+'</td><td class="nw">'+(n.vencida?'<span class="chip r">'+fmt(n.fCompromiso)+'</span>':fmt(n.fCompromiso))+'</td><td class="nw">'+(n.ot?esc(n.ot):(n.cerrada?'—':n.cierreSinOT?'<span class="chip">Sin OT req.</span>':'<span class="chip a">Sin OT</span>'))+'</td></tr>';
+  return '<tr class="rw'+(n.vencida?' venc':'')+'" onclick="abrir('+q(n.id)+')"><td>'+(n.cerrada?nv('Cerrada'):nv(n.nivel))+'</td><td><b>'+n.score+'</b></td><td class="nw">'+esc(n.id)+'</td><td class="nw">'+fmt(n.fecha)+'</td><td class="nw"><b>'+esc(n.patente)+'</b>'+(n.reincidente?' <span class="chip a">R</span>':'')+'<div class="muted small">'+esc([n.interno!==n.patente?n.interno:'',n.tipoUnidad||'sin vincular'].filter(Boolean).join(' · '))+'</div></td><td>'+esc(n.sistema)+'</td><td>'+esc(n.descripcion.slice(0,90))+'</td><td>'+(n.condicion==='Fuera de servicio'?'<span class="chip r">En mant.</span>':'<span class="chip g">Operando</span>')+'</td><td>'+esc(n.estadoRaw)+'</td><td>'+n.dias+'</td><td class="nw">'+(n.vencida?'<span class="chip r">'+fmt(n.fCompromiso)+'</span>':fmt(n.fCompromiso))+'</td><td class="nw">'+(n.ot?esc(n.ot)+(n.otEstado?'<div class="muted small">'+esc(n.otEstado)+'</div>':''):(n.cerrada?'—':n.cierreSinOT?'<span class="chip">Sin OT req.</span>':'<span class="chip a">Sin OT</span>'))+'</td></tr>';
 }
 function card(n){
   return '<div class="nc '+(n.cerrada?'':n.nivel)+'" onclick="abrir('+q(n.id)+')"><div class="top"><span>'+(n.cerrada?nv('Cerrada'):nv(n.nivel))+' <span class="muted small">score '+n.score+'</span></span><span class="id">N° '+esc(n.id)+' · '+fmt(n.fecha)+'</span></div>'+
@@ -478,42 +642,204 @@ function card(n){
     '<div><b>'+esc(n.sistema)+'</b></div><div class="d">'+esc(n.descripcion)+'</div>'+
     '<div><span class="chip b">'+esc(n.estadoRaw)+'</span>'+(n.condicion==='Fuera de servicio'?'<span class="chip r">Unidad en mant.</span>':'')+'<span class="chip">'+n.dias+' d</span>'+
     (n.vencida?'<span class="chip r">Fuera de SLA</span>':'')+(n.impSeg==='Sí'?'<span class="chip r">Seguridad</span>':'')+(n.impAmb==='Sí'?'<span class="chip a">Ambiental</span>':'')+
-    (n.reincidente?'<span class="chip a">Reincidente</span>':'')+(n.ot?'<span class="chip">'+esc(n.ot)+'</span>':(n.cerrada?'':n.cierreSinOT?'<span class="chip">Sin OT req.</span>':'<span class="chip a">Sin OT</span>'))+'</div></div>';
+    (n.reincidente?'<span class="chip a">Reincidente</span>':'')+(n.ot?chipOT(n.otEstado,'OT '+n.ot)+(n.reabierta?'<span class="chip r">Hecha en CF sin cierre final</span>':''):(n.cerrada?'':n.cierreSinOT?'<span class="chip">Sin OT req.</span>':'<span class="chip a">Sin OT</span>'))+'</div></div>';
 }
 
-/** Barras apiladas por mes de reporte (cerradas / abiertas, con % del mes) + línea de total reportadas. */
+/* ===================== GRÁFICOS MENSUALES (SVG) ===================== */
+const MESES_ES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+function ultimos12(){const m=[];for(let i=11;i>=0;i--){const d=new Date(HOY.getFullYear(),HOY.getMonth()-i,1);m.push({k:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),l:MESES_ES[d.getMonth()]+' '+String(d.getFullYear()).slice(2)});}return m;}
+function _paso(v){const r=v/5,p=Math.pow(10,Math.floor(Math.log10(r)));return [1,2,5,10].map(x=>x*p).find(x=>x>=r);}
+function _ejes(W,H,ml,mr,mt,mb,max){const ph=H-mt-mb,st=_paso(Math.max(5,max)),top=Math.ceil(max*1.12/st)*st||st,y=v=>mt+ph-v*ph/top;let s='';for(let v=0;v<=top;v+=st)s+='<line x1="'+ml+'" x2="'+(W-mr)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="#e0e2e8"/><text x="'+(ml-6)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="11" fill="#6b7280">'+v+'</text>';return {s,y,ph,top};}
+/** Barras apiladas por mes con % de cada capa y línea de total. M=[{l, v:{capa:n}}], capas=[{k,l,c}] (de abajo hacia arriba). */
+function graficoApilado(M,capas,resumen){
+  M.forEach(m=>m.t=capas.reduce((s,c)=>s+(m.v[c.k]||0),0));
+  if(!M.some(m=>m.t)) return '<div class="empty">Sin datos en los últimos 12 meses</div>';
+  const W=1000,H=330,ml=44,mr=16,mt=30,mb=40,pw=W-ml-mr, A=_ejes(W,H,ml,mr,mt,mb,Math.max(...M.map(m=>m.t)));
+  const bw=pw/M.length, cx=i=>ml+bw*i+bw/2, bwd=bw*0.62;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" role="img">'+A.s;
+  M.forEach((m,i)=>{let acc=0;s+='<g><title>'+m.l+': '+m.t+' · '+capas.map(c=>c.l+' '+(m.v[c.k]||0)+' ('+pct(m.v[c.k]||0,m.t)+'%)').join(' · ')+'</title>';
+    capas.forEach(c=>{const v=m.v[c.k]||0;if(!v)return;const y0=A.y(acc+v),hh=v*A.ph/A.top;acc+=v;
+      s+='<rect x="'+(cx(i)-bwd/2)+'" y="'+y0+'" width="'+bwd+'" height="'+hh+'" fill="'+c.c+'"/>'+(hh>=16?'<text x="'+cx(i)+'" y="'+(y0+hh/2+4)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">'+pct(v,m.t)+'%</text>':'');});
+    s+='</g><text x="'+cx(i)+'" y="'+(H-mb+16)+'" text-anchor="middle" font-size="11" fill="#1a1a1a">'+m.l+'</text>';});
+  s+='<polyline fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linejoin="round" points="'+M.map((m,i)=>cx(i)+','+A.y(m.t)).join(' ')+'"/>';
+  M.forEach((m,i)=>{s+='<circle cx="'+cx(i)+'" cy="'+A.y(m.t)+'" r="4.5" fill="#fff" stroke="#1a1a1a" stroke-width="2"/><text x="'+cx(i)+'" y="'+(A.y(m.t)-10)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a1a">'+m.t+'</text>';});
+  return s+(resumen?'<text x="'+(W-mr)+'" y="16" text-anchor="end" font-size="11" fill="#6b7280">'+esc(resumen)+'</text>':'')+'</svg>';
+}
+/** Barras agrupadas por mes + línea opcional. series=[{k,l,c}], linea={k,l} */
+function graficoAgrupado(M,series,linea){
+  const vals=M.flatMap(m=>series.map(s=>m.v[s.k]||0).concat(linea?[m.v[linea.k]||0]:[]));
+  if(!vals.some(v=>v)) return '<div class="empty">Sin datos en los últimos 12 meses</div>';
+  const W=1000,H=330,ml=44,mr=16,mt=30,mb=40,pw=W-ml-mr, A=_ejes(W,H,ml,mr,mt,mb,Math.max(...vals));
+  const bw=pw/M.length, cx=i=>ml+bw*i+bw/2, g=bw*0.78, b=g/series.length;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" role="img">'+A.s;
+  M.forEach((m,i)=>{s+='<g><title>'+m.l+': '+series.map(x=>x.l+' '+(m.v[x.k]||0)).join(' · ')+(linea?' · '+linea.l+' '+(m.v[linea.k]||0):'')+'</title>';
+    series.forEach((x,j)=>{const v=m.v[x.k]||0,x0=cx(i)-g/2+j*b;s+='<rect x="'+(x0+1)+'" y="'+A.y(v)+'" width="'+(b-2)+'" height="'+(v*A.ph/A.top)+'" fill="'+x.c+'"/>'+(v&&b>=22?'<text x="'+(x0+b/2)+'" y="'+(A.y(v)-3)+'" text-anchor="middle" font-size="9.5" fill="#1a1a1a">'+v+'</text>':'');});
+    s+='</g><text x="'+cx(i)+'" y="'+(H-mb+16)+'" text-anchor="middle" font-size="11" fill="#1a1a1a">'+m.l+'</text>';});
+  if(linea){s+='<polyline fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-dasharray="6 4" points="'+M.map((m,i)=>cx(i)+','+A.y(m.v[linea.k]||0)).join(' ')+'"/>';
+    M.forEach((m,i)=>{const v=m.v[linea.k]||0;s+='<circle cx="'+cx(i)+'" cy="'+A.y(v)+'" r="4" fill="#1a1a1a"/><text x="'+cx(i)+'" y="'+(A.y(v)-9)+'" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1a1a1a">'+v+'</text>';});}
+  return s+'</svg>';
+}
+/** Novedades por mes de reporte: cerradas / abiertas (estado actual). */
 function graficoMensual(B){
-  const MES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const meses=[]; for(let i=11;i>=0;i--){const d=new Date(HOY.getFullYear(),HOY.getMonth()-i,1);meses.push({k:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),l:MES[d.getMonth()]+' '+String(d.getFullYear()).slice(2)});}
-  meses.forEach(m=>{const L=B.filter(n=>n.fecha&&n.fecha.slice(0,7)===m.k);m.t=L.length;m.c=L.filter(n=>n.cerrada).length;m.a=m.t-m.c;});
-  if(!meses.some(m=>m.t)) return '<div class="empty">Sin novedades en los últimos 12 meses</div>';
-  const W=1000,H=330,ml=44,mr=16,mt=30,mb=40,pw=W-ml-mr,ph=H-mt-mb;
-  const paso=v=>{const r=v/5,p=Math.pow(10,Math.floor(Math.log10(r)));return [1,2,5,10].map(x=>x*p).find(x=>x>=r);};
-  const st=paso(Math.max(5,...meses.map(m=>m.t))), max=Math.ceil(Math.max(...meses.map(m=>m.t))*1.12/st)*st||st;
-  const y=v=>mt+ph-v*ph/max, bw=pw/meses.length, cx=i=>ml+bw*i+bw/2, bwd=bw*0.62;
-  let s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Novedades por mes">';
-  for(let v=0;v<=max;v+=st) s+='<line x1="'+ml+'" x2="'+(W-mr)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="#e0e2e8"/><text x="'+(ml-6)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="11" fill="#6b7280">'+v+'</text>';
-  const lbl=(x,yc,hgt,txt)=>hgt>=16?'<text x="'+x+'" y="'+(yc+4)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">'+txt+'</text>':'';
-  meses.forEach((m,i)=>{
-    const x=cx(i)-bwd/2, pc=m.t?Math.round(m.c*100/m.t):0, pa=m.t?100-pc:0, hc=m.c*ph/max, ha=m.a*ph/max;
-    s+='<g><title>'+m.l+': '+m.t+' reportadas · '+m.c+' cerradas ('+pc+'%) · '+m.a+' abiertas ('+pa+'%)</title>';
-    if(m.c) s+='<rect x="'+x+'" y="'+y(m.c)+'" width="'+bwd+'" height="'+hc+'" fill="#1D9E75"/>'+lbl(cx(i),y(m.c)+hc/2,hc,pc+'%');
-    if(m.a) s+='<rect x="'+x+'" y="'+y(m.t)+'" width="'+bwd+'" height="'+ha+'" fill="#C00000"/>'+lbl(cx(i),y(m.t)+ha/2,ha,pa+'%');
-    s+='</g><text x="'+cx(i)+'" y="'+(H-mb+16)+'" text-anchor="middle" font-size="11" fill="#1a1a1a">'+m.l+'</text>';
-  });
-  s+='<polyline fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linejoin="round" points="'+meses.map((m,i)=>cx(i)+','+y(m.t)).join(' ')+'"/>';
-  meses.forEach((m,i)=>{s+='<circle cx="'+cx(i)+'" cy="'+y(m.t)+'" r="4.5" fill="#fff" stroke="#1a1a1a" stroke-width="2"><title>'+m.l+': '+m.t+' reportadas</title></circle>'+
-    '<text x="'+cx(i)+'" y="'+(y(m.t)-10)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a1a">'+m.t+'</text>';});
-  const tt=meses.reduce((a,m)=>a+m.t,0), tc=meses.reduce((a,m)=>a+m.c,0);
-  s+='<text x="'+(W-mr)+'" y="16" text-anchor="end" font-size="11" fill="#6b7280">12 meses: '+tt+' reportadas · '+pct(tc,tt)+'% cerradas · '+(tt-tc)+' abiertas</text></svg>';
-  return s;
+  const M=ultimos12().map(m=>{const L=B.filter(n=>n.fecha&&n.fecha.slice(0,7)===m.k);return {l:m.l,v:{c:L.filter(n=>n.cerrada).length,a:L.filter(n=>!n.cerrada).length}};});
+  const tt=M.reduce((s,m)=>s+m.v.c+m.v.a,0), tc=M.reduce((s,m)=>s+m.v.c,0);
+  return graficoApilado(M,[{k:'c',l:'Cerradas',c:'#1D9E75'},{k:'a',l:'Abiertas',c:'#C00000'}],'12 meses: '+tt+' reportadas · '+pct(tc,tt)+'% cerradas · '+(tt-tc)+' abiertas');
+}
+function scrollFin(id){const sc=$(id).parentElement;sc.scrollLeft=sc.scrollWidth;}
+
+/* ===================== ÓRDENES DE TRABAJO ===================== */
+function _otKey(v){return String(v==null?'':v).trim().replace(/^OT[\s\-#]*/i,'').replace(/\.0+$/,'');}
+function otFin(o){return o.estado==='Cerrada'||o.estado==='Anulada';}
+function otIngreso(o){return o.fTaller||o.fInicio||o.fCreada;}
+function _dd(a,b){return (a&&b)?Math.max(0,Math.round((_d(b)-_d(a))/864e5)):null;}
+function otDias(o){const a=otIngreso(o);if(!a)return 0;return _dd(a,o.estado==='Cerrada'&&o.fFinal?o.fFinal:_iso(HOY));}
+function otDiasTec(o){return o.estado==='Cierre técnico'&&o.fTecnico?diasDesde(o.fTecnico):null;}
+function otLimTec(){return DIAG&&DIAG.otDiasCierreFinal?DIAG.otDiasCierreFinal:7;}
+function chipOT(e,txt){const c={'Abierta':'r','Cierre técnico':'a','Cerrada':'g','Anulada':'','No encontrada':''}[e];return '<span class="chip '+(c||'')+'">'+esc(txt||e||'')+'</span>';}
+function novDeOT(num){return ISS.filter(n=>n.ot&&_otKey(n.ot)===num);}
+function filtrarOTs(F){return OTS.filter(o=>inSel(F.cc,ccOT(o))&&inSel(F.tipo,tipoOT(o))&&patOK(F,o.patente)&&inSel(F.tot,o.tipo)&&inSel(F.tal,o.taller)&&inSel(F.cre,o.creadaPor));}
+function verOT(v){$('oEst').value=v;renderOT();$('oTit').scrollIntoView({behavior:'smooth'});}
+function semaf(p){return p>=90?'#1D9E75':p>=70?'#EF9F27':'#C00000';}
+function filtrarCreador(c){msSet('cre',[c]);onFiltro();}
+
+function renderOT(){
+  if(!HOY) return;
+  const F=GF(), hoyI=_iso(HOY), lim=otLimTec(), est=$('oEst').value;
+  const B=filtrarOTs(F);
+  const pend=B.filter(o=>!otFin(o)), ab=pend.filter(o=>o.estado==='Abierta'), tec=pend.filter(o=>o.estado==='Cierre técnico');
+  const tecV=tec.filter(o=>(otDiasTec(o)||0)>lim), vEst=ab.filter(o=>o.fEstimada&&o.fEstimada<hoyI), afd=pend.filter(o=>o.afectaDisp);
+  const creP=B.filter(o=>enRango(o.fCreada,F)), creV=creP.filter(o=>o.estado!=='Anulada'), cerP=B.filter(o=>o.estado==='Cerrada'&&enRango(o.fFinal,F)), anuP=creP.filter(o=>o.estado==='Anulada');
+  const avg=a=>{const v=a.filter(x=>x!==null&&x!==undefined);return v.length?v.reduce((s,x)=>s+x,0)/v.length:0;};
+  const mttr=avg(cerP.map(otDias)), tT=avg(cerP.map(o=>_dd(otIngreso(o),o.fTecnico))), tA=avg(cerP.map(o=>_dd(o.fTecnico,o.fFinal)));
+  const edadAb=avg(ab.map(otDias)), tecProm=avg(tec.map(otDiasTec)), pcf=pct(creV.filter(o=>o.estado==='Cerrada').length,creV.length);
+  $('okpis').innerHTML=
+    kpi('N','Sin cierre final',pend.length,ab.length+' abiertas · '+tec.length+' cierre técnico',"verOT('pend')")+
+    kpi('R','Abiertas',ab.length,'edad prom. '+edadAb.toFixed(1)+' d',"verOT('Abierta')")+
+    kpi(tec.length?'O':'G','En cierre técnico',tec.length,'prom. '+tecProm.toFixed(1)+' d sin cierre final',"verOT('Cierre técnico')")+
+    kpi(tecV.length?'R':'G','Cierre técnico > '+lim+' d',tecV.length,'desvío: falta cierre final',"verOT('tecv')")+
+    kpi(vEst.length?'R':'G','Vencidas',vEst.length,'abiertas con fecha estimada pasada',"verOT('vest')")+
+    kpi(afd.length?'O':'G','Afectan disponibilidad',afd.length,'sin cierre final',"verOT('afd')")+
+    kpi('B','Creadas período',creP.length,anuP.length+' anuladas ('+pct(anuP.length,creP.length)+'%)')+
+    kpi(pcf>=90?'G':pcf>=70?'A':'R','% cierre final',creV.length?pcf+'%':'—','de las creadas en período (sin anuladas)')+
+    kpi('G','Cerradas período',cerP.length,'cierre final en período',"verOT('Cerrada')")+
+    kpi(mttr>10?'A':'G','MTTR OT',mttr.toFixed(1)+' d','técnico '+tT.toFixed(1)+' d + administrativo '+tA.toFixed(1)+' d');
+
+  // Evolución mensual por estado (mes de creación) y flujo mensual
+  const M12=ultimos12();
+  $('oMesEst').innerHTML=graficoApilado(M12.map(m=>{const L=B.filter(o=>o.fCreada&&o.fCreada.slice(0,7)===m.k);return {l:m.l,v:{c:L.filter(o=>o.estado==='Cerrada').length,t:L.filter(o=>o.estado==='Cierre técnico').length,a:L.filter(o=>o.estado==='Abierta').length,x:L.filter(o=>o.estado==='Anulada').length}};}),
+    [{k:'c',l:'Cerrada',c:'#1D9E75'},{k:'t',l:'Cierre técnico',c:'#EF9F27'},{k:'a',l:'Abierta',c:'#C00000'},{k:'x',l:'Anulada',c:'#b8bcc6'}]);
+  scrollFin('oMesEst');
+  const finMes=k=>{const [y,mm]=k.split('-').map(Number);return _iso(new Date(y,mm,0));};
+  $('oMesFlujo').innerHTML=graficoAgrupado(M12.map(m=>{const fm=finMes(m.k),ref=fm>hoyI?hoyI:fm;
+    return {l:m.l,v:{cr:B.filter(o=>o.fCreada&&o.fCreada.slice(0,7)===m.k).length,te:B.filter(o=>o.fTecnico&&o.fTecnico.slice(0,7)===m.k).length,fi:B.filter(o=>o.estado==='Cerrada'&&o.fFinal&&o.fFinal.slice(0,7)===m.k).length,
+      bk:B.filter(o=>o.estado!=='Anulada'&&o.fCreada&&o.fCreada<=ref&&!(o.estado==='Cerrada'&&o.fFinal&&o.fFinal<=ref)).length}};}),
+    [{k:'cr',l:'Creadas',c:'#378ADD'},{k:'te',l:'Cierre técnico',c:'#EF9F27'},{k:'fi',l:'Cierre final',c:'#1D9E75'}],{k:'bk',l:'Backlog sin cierre final'});
+  scrollFin('oMesFlujo');
+
+  // % cierre final por creador (período)
+  const porC={};creV.forEach(o=>{const c=o.creadaPor||'Sin dato';(porC[c]=porC[c]||[]).push(o);});
+  const filasC=Object.entries(porC).map(([c,L])=>{const ce=L.filter(o=>o.estado==='Cerrada');return {c,n:L.length,ce:ce.length,te:L.filter(o=>o.estado==='Cierre técnico').length,ab:L.filter(o=>o.estado==='Abierta').length,p:pct(ce.length,L.length),d:avg(ce.map(o=>_dd(o.fCreada,o.fFinal)))};}).sort((a,b)=>b.n-a.n);
+  $('oCreTabla').innerHTML=filasC.length?'<div class="tscroll" style="max-height:420px"><table class="t"><thead><tr><th>Creador</th><th>Creadas</th><th>Cierre final</th><th>Cierre técnico</th><th>Abiertas</th><th style="min-width:200px">% cierre final</th><th>Días prom. a cierre final</th></tr></thead><tbody>'+
+    filasC.map(r=>'<tr class="rw" onclick="filtrarCreador('+q(r.c)+')"><td><b>'+esc(r.c)+'</b></td><td>'+r.n+'</td><td>'+r.ce+'</td><td>'+(r.te?'<span class="chip a">'+r.te+'</span>':'0')+'</td><td>'+(r.ab?'<span class="chip r">'+r.ab+'</span>':'0')+'</td>'+
+      '<td><div style="display:flex;align-items:center;gap:8px"><div class="bar-track" style="flex:1"><div class="bar-fill" style="width:'+r.p+'%;background:'+semaf(r.p)+'"></div></div><b style="min-width:38px;text-align:right">'+r.p+'%</b></div></td><td>'+(r.ce?r.d.toFixed(1):'—')+'</td></tr>').join('')+
+    '</tbody></table></div>':'<div class="empty">Sin OT creadas en el período</div>';
+
+  // Matriz mensual por creador (12 meses)
+  const B12=B.filter(o=>o.estado!=='Anulada'&&o.fCreada&&o.fCreada.slice(0,7)>=M12[0].k);
+  const vol={};B12.forEach(o=>{const c=o.creadaPor||'Sin dato';vol[c]=(vol[c]||0)+1;});
+  const top=Object.keys(vol).sort((a,b)=>vol[b]-vol[a]).slice(0,15);
+  const celda=L=>{if(!L.length)return '<td><span class="muted">—</span></td>';const p=pct(L.filter(o=>o.estado==='Cerrada').length,L.length);return '<td><span class="c" style="background:'+semaf(p)+'">'+p+'%</span><small>n='+L.length+'</small></td>';};
+  $('oCreMes').innerHTML=top.length?'<table class="hm"><thead><tr><th style="text-align:left">Creador</th>'+M12.map(m=>'<th>'+m.l+'</th>').join('')+'<th>12 meses</th></tr></thead><tbody>'+
+    top.map(c=>{const Lc=B12.filter(o=>(o.creadaPor||'Sin dato')===c);return '<tr><td class="n" title="'+esc(c)+'" style="cursor:pointer" onclick="filtrarCreador('+q(c)+')">'+esc(c)+'</td>'+M12.map(m=>celda(Lc.filter(o=>o.fCreada.slice(0,7)===m.k))).join('')+celda(Lc)+'</tr>';}).join('')+
+    '<tr class="tot"><td class="n">Total</td>'+M12.map(m=>celda(B12.filter(o=>o.fCreada.slice(0,7)===m.k))).join('')+celda(B12)+'</tr></tbody></table>'+(Object.keys(vol).length>15?'<p class="help">Se muestran los 15 creadores con más OT. Usá el filtro "Creador de la OT" para ver otros.</p>':''):'<div class="empty">Sin datos</div>';
+
+  // Coherencia
+  const reab=ISS.filter(n=>n.reabierta&&!n.descartada&&inSel(F.cc,n.un)&&patOK(F,n.patente));
+  const FA=flotaActiva().filter(u=>inSel(F.cc,u.un)&&inSel(F.tipo,u.tipo)&&patOK(F,u.patente)), pendPat=new Set(OTS.filter(o=>!otFin(o)).map(o=>_key(o.patente)));
+  const afdPat=new Set(OTS.filter(o=>!otFin(o)&&o.afectaDisp).map(o=>_key(o.patente)));
+  const idxOT={};OTS.forEach(o=>idxOT[o.numero]=o);
+  const mantSinOT=FA.filter(u=>u.enMant&&!pendPat.has(_key(u.patente)));
+  const dispConOT=FA.filter(u=>u.tieneEstado!==false&&!u.enMant&&afdPat.has(_key(u.patente)));
+  const euOTcerr=FA.filter(u=>u.enMant&&u.ot&&idxOT[_otKey(u.ot)]&&otFin(idxOT[_otKey(u.ot)]));
+  const blk=(tit,arr,item,txt)=>'<details style="margin-bottom:8px"><summary>'+(arr.length?'<span class="chip r">'+arr.length+'</span>':'<span class="chip g">0</span>')+' '+tit+'</summary><p class="help">'+txt+'</p><div style="margin-top:6px">'+(arr.length?arr.slice(0,60).map(item).join(''):'<span class="muted small">Sin desvíos</span>')+(arr.length>60?' <span class="muted small">… y '+(arr.length-60)+' más</span>':'')+'</div></details>';
+  const chU=u=>'<span class="chip b" style="cursor:pointer" onclick="abrirUnidad('+q(u.patente)+')">'+esc(u.patente)+'</span>';
+  $('oCoh').innerHTML=
+    blk('Novedades marcadas como hechas en CloudFleet con OT sin cierre final',reab,n=>'<span class="chip a" style="cursor:pointer" onclick="abrir('+q(n.id)+')">N° '+esc(n.id)+' · '+esc(n.patente)+' · OT '+esc(n.ot)+' ('+esc(n.otEstado)+')</span>','El tablero las mantiene ABIERTAS. Es el caso detectado en auditoría: corresponde completar el cierre final de la OT.')+
+    blk('OT en cierre técnico hace más de '+lim+' días',tecV.slice().sort((a,b)=>otDiasTec(b)-otDiasTec(a)),o=>'<span class="chip a" style="cursor:pointer" onclick="abrirOT('+q(o.numero)+')">OT '+esc(o.numero)+' · '+esc(o.patente)+' · '+otDiasTec(o)+' d · '+esc(o.creadaPor||'—')+'</span>','Trabajo terminado sin cierre administrativo. Parámetro: OT_DIAS_CIERRE_FINAL en Code.gs.')+
+    blk('Unidades EN MANTENIMIENTO (Estado de Unidades) sin OT abierta',mantSinOT,chU,'Falta abrir la OT en CloudFleet o el estado de la unidad no está actualizado.')+
+    blk('Unidades DISPONIBLES con OT abierta que afecta disponibilidad',dispConOT,chU,'La OT indica unidad no disponible pero Estado de Unidades la muestra operativa: verificar cuál está mal.')+
+    blk('Unidades en mantenimiento cuya OT de Estado de Unidades ya está cerrada',euOTcerr,u=>'<span class="chip b" style="cursor:pointer" onclick="abrirUnidad('+q(u.patente)+')">'+esc(u.patente)+' · OT '+esc(u.ot)+'</span>','La OT cargada en Estado de Unidades figura cerrada/anulada en CloudFleet: actualizar el estado de la unidad o la OT de referencia.');
+
+  // Listado
+  let L, tit;
+  const per=o=>o.estado==='Cerrada'?enRango(o.fFinal,F):enRango(o.fCreada,F);
+  switch(est){
+    case 'Abierta': L=ab; tit='OT abiertas'; break;
+    case 'Cierre técnico': L=tec; tit='OT en cierre técnico'; break;
+    case 'tecv': L=tecV; tit='OT en cierre técnico hace más de '+lim+' días'; break;
+    case 'vest': L=vEst; tit='OT abiertas vencidas (fecha estimada)'; break;
+    case 'afd': L=afd; tit='OT sin cierre final que afectan disponibilidad'; break;
+    case 'Cerrada': L=cerP; tit='OT cerradas en período'; break;
+    case 'Anulada': L=anuP; tit='OT anuladas en período'; break;
+    case 'todas': L=B.filter(o=>!otFin(o)||per(o)); tit='Todas (sin cierre final + período)'; break;
+    default: L=pend; tit='OT sin cierre final';
+  }
+  L=L.slice().sort((a,b)=>otFin(a)&&otFin(b)?String(b.fFinal||b.fCreada).localeCompare(String(a.fFinal||a.fCreada)):otDias(b)-otDias(a));
+  OT_L=L;
+  $('oTit').textContent=tit+' ('+L.length+')';
+  const Mx=L.slice(0,400);
+  const fila=o=>{const nov=novDeOT(o.numero), dT=otDiasTec(o), venc=o.estado==='Abierta'&&o.fEstimada&&o.fEstimada<hoyI;
+    return '<tr class="rw'+(venc||(dT||0)>lim?' venc':'')+'" onclick="abrirOT('+q(o.numero)+')"><td class="nw"><b>'+esc(o.numero)+'</b></td><td>'+chipOT(o.estado)+(o.afectaDisp&&!otFin(o)?'<div><span class="chip r">Afecta disp.</span></div>':'')+'</td><td class="nw"><b>'+esc(o.patente)+'</b></td><td>'+esc(o.tipo)+'</td><td>'+esc(o.taller||'—')+'</td><td>'+esc(ccOT(o)||'—')+'</td><td>'+esc(o.creadaPor||'—')+'</td>'+
+      '<td class="nw">'+fmt(otIngreso(o))+'</td><td><b>'+otDias(o)+'</b></td><td class="nw">'+fmt(o.fEstimada)+(venc?' <span class="chip r">venc.</span>':'')+'</td><td class="nw">'+fmt(o.fTecnico)+(dT!==null?' <span class="chip '+(dT>lim?'r':'a')+'">'+dT+' d</span>':'')+'</td><td class="nw">'+fmt(o.fFinal)+'</td>'+
+      '<td>'+esc([o.motivo,o.falla].filter(Boolean).join(' · ')||'—')+'</td><td>'+(nov.length?'<span class="chip b">'+nov.length+'</span>':'')+'</td></tr>';};
+  $('oTabla').innerHTML=Mx.length?'<table class="t"><thead><tr><th>N° OT</th><th>Estado</th><th>Patente</th><th>Tipo</th><th>Taller</th><th>Centro costos</th><th>Creada por</th><th>Ingreso</th><th>Días</th><th>Estimada</th><th>Cierre técnico</th><th>Cierre final</th><th>Motivo / falla</th><th>Nov.</th></tr></thead><tbody>'+Mx.map(fila).join('')+'</tbody></table>':'<div class="empty">Sin OT para este filtro</div>';
+  $('oCards').innerHTML=Mx.length?Mx.slice(0,150).map(cardOT).join(''):'<div class="empty">Sin OT para este filtro</div>';
+  $('oCount').textContent=L.length>400?'Se muestran 400 de '+L.length+' (usar filtros o exportar CSV).':'';
+
+  // Gráficos de barras
+  const bk=[['0–3 días',0,3,'var(--G)'],['4–7 días',4,7,'var(--A)'],['8–15 días',8,15,'var(--O)'],['16–30 días',16,30,'var(--R)'],['> 30 días',31,1e9,'#7a0000']];
+  $('oAging').innerHTML=bars(bk.map(b=>({l:b[0],v:pend.filter(o=>{const d=otDias(o);return d>=b[1]&&d<=b[2];}).length,c:b[3]})));
+  $('oTec').innerHTML=bars(bk.map(b=>({l:b[0],v:tec.filter(o=>{const d=otDiasTec(o)||0;return d>=b[1]&&d<=b[2];}).length,c:b[1]>lim?'var(--R)':'var(--A)'})))+'<p class="help">Rojo = supera '+lim+' días sin cierre final.</p>';
+  $('oTalleres').innerHTML=bars(Object.entries(contar(pend,o=>o.taller||'Sin taller')).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([k,v])=>({l:k,v,c:'var(--N)'})));
+  const dual=(fn)=>{const a=contar(pend,fn),p=contar(creP,fn);return uniq([...Object.keys(a),...Object.keys(p)]).map(k=>({l:k,v:a[k]||0,p:p[k]||0})).sort((x,y)=>y.v-x.v||y.p-x.p).slice(0,12);};
+  $('oTipos').innerHTML=bars(dual(o=>o.tipo||'Sin tipo'),'var(--B)',i=>i.v+' <small>/ '+i.p+'</small>');
+  $('oCCs').innerHTML=bars(dual(o=>ccOT(o)||'Sin centro de costos'),'var(--B)',i=>i.v+' <small>/ '+i.p+'</small>');
+  $('oCreadores').innerHTML=bars(Object.entries(contar(pend,o=>o.creadaPor||'Sin dato')).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([k,v])=>({l:k,v,c:'var(--O)',click:'filtrarCreador('+q(k)+')'})));
+}
+function cardOT(o){const dT=otDiasTec(o),lim=otLimTec();return '<div class="nc '+(o.estado==='Abierta'?'Crítica':o.estado==='Cierre técnico'?'Alta':'')+'" onclick="abrirOT('+q(o.numero)+')"><div class="top"><span>'+chipOT(o.estado)+' <b>OT '+esc(o.numero)+'</b> <span class="muted small">'+esc(o.tipo)+'</span></span><span class="id">'+fmt(otIngreso(o))+(o.fFinal?' → '+fmt(o.fFinal):'')+' · '+otDias(o)+' d</span></div><div class="u">'+esc(o.patente)+' <span class="muted small" style="font-weight:400">'+esc([tipoOT(o),ccOT(o)].filter(Boolean).join(' · '))+'</span></div><div class="d">'+esc([o.motivo,o.falla].filter(Boolean).join(' · ')||'—')+'</div><div><span class="chip">'+esc(o.taller||'Sin taller')+'</span><span class="chip">Creó: '+esc(o.creadaPor||'—')+'</span>'+(dT!==null?'<span class="chip '+(dT>lim?'r':'a')+'">Cierre técnico hace '+dT+' d</span>':'')+(o.afectaDisp&&!otFin(o)?'<span class="chip r">Afecta disp.</span>':'')+(novDeOT(o.numero).length?'<span class="chip b">'+novDeOT(o.numero).length+' novedad(es)</span>':'')+'</div></div>';}
+function abrirOT(num,push){
+  const o=OTS.find(x=>x.numero===String(num)); if(!o) return mostrarToast('OT no encontrada en la sincronización','err');
+  CUR=num; const dT=otDiasTec(o), nov=novDeOT(o.numero), u=uDe(o.patente);
+  $('otInfo').innerHTML='<div class="card nc '+(o.estado==='Abierta'?'Crítica':o.estado==='Cierre técnico'?'Alta':'')+'" style="cursor:default">'+
+    '<div class="top"><span>'+chipOT(o.estado)+' <b style="font-size:16px">OT '+esc(o.numero)+'</b></span><span class="id">'+esc(o.estadoRaw)+'</span></div>'+
+    '<div class="u" style="margin:6px 0">'+esc(o.patente)+(u?' <span class="muted small" style="font-weight:400">'+esc([u.interno!==u.patente?u.interno:'',u.tipo,u.un].filter(Boolean).join(' · '))+'</span>':'')+'</div>'+
+    (o.estado==='Cierre técnico'?'<div style="margin-bottom:8px"><span class="chip '+(dT>otLimTec()?'r':'a')+'">Cierre técnico hace '+dT+' días · falta cierre final</span></div>':'')+
+    '<div class="kv"><b>Tipo</b><span>'+esc(o.tipo||'—')+'</span><b>Motivo</b><span>'+esc(o.motivo||'—')+'</span><b>Falla detectada</b><span>'+esc(o.falla||'—')+'</span>'+(o.comentario?'<b>Comentarios</b><span>'+esc(o.comentario)+'</span>':'')+
+    '<b>Taller / proveedor</b><span>'+esc(o.taller||'—')+'</span><b>Centro de costos</b><span>'+esc(ccOT(o)||'—')+'</span><b>Creada por</b><span>'+esc(o.creadaPor||'—')+' · '+fmt(o.fCreada)+'</span>'+
+    '<b>Ingreso a taller</b><span>'+fmt(otIngreso(o))+'</span><b>Fecha estimada</b><span>'+fmt(o.fEstimada)+(o.estado==='Abierta'&&o.fEstimada&&o.fEstimada<_iso(HOY)?' <span class="chip r">vencida</span>':'')+'</span>'+
+    '<b>Cierre técnico</b><span>'+fmt(o.fTecnico)+'</span><b>Cierre final</b><span>'+fmt(o.fFinal)+'</span><b>Días</b><span>'+otDias(o)+(o.estado==='Cerrada'?' (ingreso → cierre final)':' (en curso)')+'</span>'+
+    '<b>Afecta disponibilidad</b><span>'+(o.afectaDisp?'Sí':'No')+'</span>'+(o.etiquetas?'<b>Etiquetas</b><span>'+esc(o.etiquetas)+'</span>':'')+(o.odometro?'<b>Odómetro</b><span>'+esc(o.odometro)+'</span>':'')+'</div>'+
+    '<div style="margin-top:12px"><button class="btn lt" onclick="abrirUnidad('+q(o.patente)+')">Ver ficha de la unidad ›</button></div></div>'+
+    '<div class="card"><h3>Novedades vinculadas ('+nov.length+')</h3>'+(nov.length?nov.map(card).join(''):'<div class="empty">Ninguna novedad de la sincronización apunta a esta OT</div>')+'</div>';
+  goTo('v-otdet',push);
+}
+function exportarOTCSV(){
+  const cols=[['numero','N° OT'],['estado','Estado'],['estadoRaw','Estado CloudFleet'],['patente','Patente'],['tipo','Tipo'],['taller','Taller'],['_cc','Centro de costos'],['creadaPor','Creada por'],['fTaller','Ingreso taller'],['fCreada','Creada'],['fEstimada','Fecha estimada'],['fTecnico','Cierre técnico'],['fFinal','Cierre final'],['_dias','Días'],['_diasTec','Días desde cierre técnico'],['afectaDisp','Afecta disponibilidad'],['motivo','Motivo'],['falla','Falla detectada'],['_nov','Novedades vinculadas']];
+  const rows=OT_L.map(o=>Object.assign({},o,{_cc:ccOT(o),_dias:otDias(o),_diasTec:otDiasTec(o)??'',_nov:novDeOT(o.numero).map(n=>n.id).join(' '),afectaDisp:o.afectaDisp?'Sí':'No'}));
+  const csv='﻿'+'Filtros: '+filtrosTexto()+'\n'+cols.map(c=>c[1]).join(';')+'\n'+rows.map(o=>cols.map(c=>'"'+String(o[c[0]]==null?'':o[c[0]]).replace(/"/g,'""').replace(/\n/g,' ')+'"').join(';')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='OT_'+$('oEst').value+'_'+_iso(HOY)+'.csv';a.click();
+}
+function fichaOT(pat){
+  const L=OTS.filter(o=>_key(o.patente)===_key(pat)), p=L.filter(o=>!otFin(o)).sort((a,b)=>otDias(b)-otDias(a)), c=L.filter(o=>o.estado==='Cerrada').sort((a,b)=>String(b.fFinal).localeCompare(String(a.fFinal))).slice(0,10);
+  return '<div class="card"><h3>Órdenes de trabajo sin cierre final ('+p.length+')</h3>'+(p.length?p.map(cardOT).join(''):'<div class="empty">Sin OT abiertas</div>')+'</div>'+
+    '<div class="card"><h3>Últimas OT cerradas <small>('+L.filter(o=>o.estado==='Cerrada').length+' en 12 meses)</small></h3>'+(c.length?c.map(cardOT).join(''):'<div class="empty">Sin OT cerradas en el período sincronizado</div>')+'</div>';
 }
 
 /* ===================== TABLERO NOVEDADES ===================== */
 function renderDash(){
   if(!HOY) return;
   const F=filtrosDash(), K=calcular(F);
-  $('dashNota').textContent='Abiertas, críticas, SLA y sin OT = foto al '+fmt(_iso(HOY))+'. Reportadas, MTTR, plazo y Pareto = período '+fmt(F.desde)+' a '+fmt(F.hasta)+'. Novedades descartadas excluidas.';
+  $('dashNota').textContent='Filtros generales arriba. Abiertas, críticas, SLA y sin OT = foto al '+fmt(_iso(HOY))+'. Reportadas, MTTR, plazo y Pareto = período '+fmt(F.desde)+' a '+fmt(F.hasta)+'. Novedades descartadas excluidas.';
   $('kpis').innerHTML=
     kpi('N','Abiertas',K.abiertas.length,'Edad prom. '+K.edadProm.toFixed(1)+' d',"irLista('abiertas')")+
     kpi('R','Críticas abiertas',K.criticas.length,K.seg.length+' en sistemas de seguridad',"irLista('abiertas','Crítica')")+
@@ -544,7 +870,7 @@ function renderDash(){
     '<p class="help">Naranja = con reincidencias. Candidatas a análisis de causa raíz / revisión del plan preventivo.</p>';
 
   $('chMes').innerHTML=graficoMensual(K.B);
-  { const sc=$('chMes').parentElement; sc.scrollLeft=sc.scrollWidth; }   // en celular arranca mostrando los meses recientes
+  scrollFin('chMes');   // en celular arranca mostrando los meses recientes
 
   const wk=[]; const lunes=new Date(HOY); lunes.setDate(lunes.getDate()-((lunes.getDay()+6)%7));
   for(let i=11;i>=0;i--){const d=new Date(lunes);d.setDate(d.getDate()-7*i);const h=new Date(d);h.setDate(h.getDate()+6);wk.push([_iso(d),_iso(h)]);}
@@ -579,8 +905,8 @@ function renderReglas(){
 /* ===================== FLOTA ===================== */
 function renderFlota(){
   if(!HOY) return;
-  const un=$('uUN').value, ti=$('uTipo').value, ta=$('uTaller').value, qq=$('uQ').value.trim().toLowerCase();
-  const U=flotaActiva().filter(u=>(!un||u.un===un)&&(!ti||u.tipo===ti)&&(!ta||u.taller===ta)&&(!qq||[u.interno,u.patente,u.marca,u.linea,u.grupo,u.ot,u.detalle,u.categoria,u.demora,u.motivoBaja].join(' ').toLowerCase().includes(qq)));
+  const F=GF();
+  const U=flotaActiva().filter(u=>inSel(F.cc,u.un)&&inSel(F.tipo,u.tipo)&&patOK(F,u.patente));
   const M=U.filter(u=>u.enMant);
   M.forEach(u=>{u._dias=u.diasMant||diasDesde(u.fBaja)||0;u._ab=abiertasDe(u);u._comp=!!u.fComprometida&&_d(u.fComprometida)<HOY;});
   const promD=M.length?M.reduce((a,u)=>a+u._dias,0)/M.length:0;
@@ -608,14 +934,15 @@ function renderFlota(){
 
 /* ===================== LISTADO ===================== */
 function irLista(estado,nivel,solo){
-  $('lQ').value='';$('lEstado').value=estado||'';$('lNivel').value=nivel||'';$('lSolo').value=solo||'';$('lUN').value=$('fUN').value||'';$('lSis').value=$('fSistema').value||'';
+  $('lQ').value='';$('lEstado').value=estado||'';$('lSolo').value=solo||''; if(nivel) msSet('niv',[nivel]);
   goTo('v-lista');
 }
 function filtrarLista(){
-  const qq=$('lQ').value.trim().toLowerCase(), e=$('lEstado').value, nl=$('lNivel').value, un=$('lUN').value, si=$('lSis').value, s=$('lSolo').value, o=$('lOrden').value;
+  const qq=$('lQ').value.trim().toLowerCase(), e=$('lEstado').value, s=$('lSolo').value, o=$('lOrden').value, F=GF();
   const L=vivas().filter(n=>{
     if(e==='abiertas'&&n.cerrada) return false; if(e&&e!=='abiertas'&&n.estadoRaw!==e) return false;
-    if(nl&&(n.nivel!==nl||n.cerrada)) return false; if(un&&n.un!==un) return false; if(si&&n.sistema!==si) return false;
+    if(F.niv.length&&(!F.niv.includes(n.nivel)||n.cerrada)) return false; if(!inSel(F.cc,n.un)||!inSel(F.sis,n.sistema)||!inSel(F.tipo,n.tipoUnidad)||!patOK(F,n.patente)) return false;
+    if((F.desde||F.hasta)&&e!=='abiertas'&&!(enRango(n.fecha,F)||(!n.cerrada))) return false;
     if(s==='venc'&&!n.vencida) return false; if(s==='fs'&&(n.condicion!=='Fuera de servicio'||n.cerrada)) return false;
     if(s==='seg'&&n.impSeg!=='Sí') return false; if(s==='reinc'&&!n.reincidente) return false;
     if(s==='sinot'&&(n.ot||n.cerrada||n.cierreSinOT)) return false; if(s==='sinv'&&n.vinculada) return false;
@@ -643,7 +970,7 @@ function abrir(id,push){
     '<div style="margin-bottom:10px">'+n.motivos.map(m=>'<span class="chip r">'+esc(m)+'</span>').join('')+'</div>'+
     '<div class="kv"><b>Novedad</b><span>'+esc(n.descripcion)+'</span><b>Categoría sistema</b><span>'+esc(n.categoria||'—')+'</span><b>Clasificación</b><span>'+esc(n.sistema)+' ('+esc(n.criticidadSistema)+')</span>'+
     '<b>Reportó</b><span>'+esc(n.reporta||'—')+' · '+fmt(n.fecha)+(n.odometro?' · '+esc(n.odometro)+' km':'')+'</span>'+
-    '<b>Responsable</b><span>'+esc(n.responsable||'—')+'</span><b>Estado</b><span>'+esc(n.estadoRaw)+' · '+n.dias+' días</span><b>Prioridad</b><span>'+esc(n.prioridad||'—')+'</span><b>OT</b><span>'+esc(n.ot||'Sin OT')+'</span>'+
+    '<b>Responsable</b><span>'+esc(n.responsable||'—')+'</span><b>Estado</b><span>'+esc(n.estadoRaw)+' · '+n.dias+' días</span><b>Prioridad</b><span>'+esc(n.prioridad||'—')+'</span><b>OT</b><span>'+(n.ot?esc(n.ot)+' '+chipOT(n.otEstado,n.otEstado||'—')+(n.otTaller?' · '+esc(n.otTaller):'')+(n.reabierta?' <span class="chip r">Marcada como hecha en CloudFleet con OT sin cierre final: se mantiene ABIERTA</span>':''):'Sin OT')+'</span>'+
     '<b>SLA</b><span>'+n.sla+' d → '+fmt(n.fCompromiso)+(n.vencida?' <span class="chip r">FUERA DE SLA</span>':'')+(n.cerrada?(n.enPlazo===false?' <span class="chip r">cerró fuera de plazo</span>':n.enPlazo?' <span class="chip g">cerró en plazo</span>':''):'')+'</span>'+
     (n.cerrada?'<b>Cierre</b><span>'+fmt(n.fCierre)+'</span>':'')+
     '<b>Unidad</b><span>'+esc([n.tipoUnidad,n.marca,n.un||n.grupo,n.propiedad].filter(Boolean).join(' · ')||'—')+' · <b>'+esc(n.estadoUnidad)+'</b></span></div>'+
@@ -662,7 +989,7 @@ function abrirUnidad(cod,push){
     (u.enMant?'<b>Baja / días</b><span>'+fmt(u.fBaja)+' · '+(u.diasMant||diasDesde(u.fBaja)||0)+' d</span><b>Comprometida</b><span>'+fmt(u.fComprometida)+'</span><b>Mantenimiento</b><span>'+esc([u.tipoMant,u.categoria,u.detalle].filter(Boolean).join(' · ')||'—')+'</span><b>Taller</b><span>'+esc([u.taller,u.nombreTaller].filter(Boolean).join(' · ')||'—')+'</span><b>OT</b><span>'+esc(u.ot||'—')+'</span><b>Estado rep.</b><span>'+esc(u.estadoRep||'—')+'</span><b>Demora</b><span>'+esc(u.demora||'—')+'</span><b>Motivo baja</b><span>'+esc(u.motivoBaja||'—')+'</span>':'')+'</div>':'<p class="muted">Unidad no encontrada en Estado de Unidades.</p>';
   $('uniInfo').innerHTML='<div class="card"><div style="font-size:18px;font-weight:700;margin-bottom:8px">'+esc(pat)+(u&&u.interno&&u.interno!==u.patente?' <span class="muted" style="font-size:14px;font-weight:400">· '+esc(u.interno)+'</span>':'')+'</div>'+kv+'</div>'+
     '<div class="card"><h3>Novedades abiertas ('+ab.length+')</h3>'+(ab.length?ab.map(card).join(''):'<div class="empty">Sin novedades abiertas</div>')+'</div>'+
-    '<div class="card"><h3>Últimas cerradas</h3>'+(ce.length?ce.map(card).join(''):'<div class="empty">Sin historial cargado</div>')+'</div>';
+    '<div class="card"><h3>Últimas cerradas</h3>'+(ce.length?ce.map(card).join(''):'<div class="empty">Sin historial cargado</div>')+'</div>'+fichaOT(pat);
   goTo('v-unidad',push);
 }
 
@@ -689,7 +1016,7 @@ function exportarPDF(){
   const F=filtrosDash(), K=calcular(F);
   const {jsPDF}=window.jspdf; const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
   const W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight();
-  const filtros=[F.un&&'UN: '+F.un,F.tipo&&'Tipo: '+F.tipo,F.sistema&&'Sistema: '+F.sistema].filter(Boolean).join(' | ')||'Sin filtros';
+  const filtros=Object.keys(MS_LBL).filter(k=>msVal(k).length).map(k=>MS_LBL[k]+': '+msVal(k).join(', ')).join(' | ')||'Sin filtros';
   doc.setFillColor(26,26,26);doc.rect(0,0,W,22,'F');doc.setFillColor(192,0,0);doc.rect(10,6,36,8,'F');
   doc.setTextColor(255);doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.text('GRIFFOULIERE',28,11.4,{align:'center'});
   doc.setFontSize(13);doc.text('Informe de Novedades de Mantenimiento',52,11.6);
@@ -772,14 +1099,26 @@ function demoInit(){
       ot:(cerr||est==='Asignada a OT'||rnd()<0.3)?'OT-'+(6000+i):'',reporta:pick(['Chofer','Supervisor de turno','Checklist pre-uso','Mecánico']),odometro:String(Math.floor(80000+rnd()*600000))});
   }
   issues.push({id:'3999',fecha:_iso(hoy),interno:'XX-9999',patente:'',descripcion:'Unidad de tercero con luz de giro rota',categoria:'',estadoRaw:'Pendiente',cerrada:false,descartada:false,fCierre:'',prioridad:'',ot:'',reporta:'Chofer',odometro:''});
-  DEMO_DB={unidades,flota:armarFlota(unidades,[]),issues,sistemas,hoy};
+  const ots=[], tall=['BASE BARRANCAS','BASE AÑELO','TALLER EXTERNO NQN','FRENOS DEL SUR','HIDRAULICA PATAGONIA'];
+  const mkOT=(num,pat,ini,cerr)=>{const f=_d(ini);const tec=new Date(f);tec.setDate(tec.getDate()+1+Math.floor(rnd()*8));const fin=new Date(tec);fin.setDate(fin.getDate()+Math.floor(rnd()*12));
+    let est=cerr?(rnd()<0.8?'Cerrada':'Cierre técnico'):(rnd()<0.65?'Abierta':'Cierre técnico'); if(rnd()<0.05) est='Anulada'; if(est==='Cierre técnico'&&tec>hoy) est='Abierta';
+    const fe=new Date(f);fe.setDate(fe.getDate()+3+Math.floor(rnd()*7)); const u=unidades.find(x=>x.patente===pat)||{};
+    ots.push({numero:num,patente:pat,estado:est,estadoRaw:est,tipo:rnd()<0.7?'Correctivo':'Preventivo',motivo:pick(['Reparación','Falla en servicio','Revisión programada','Novedad checklist']),falla:'',comentario:'',
+      taller:pick(tall),fTaller:ini,fInicio:ini,fEstimada:_iso(fe),fCreada:ini,fTecnico:(est==='Cierre técnico'||est==='Cerrada')&&tec<=hoy?_iso(tec):'',fFinal:est==='Cerrada'&&fin<=hoy?_iso(fin):'',
+      cc:u.un||'',ciudad:'',grupo:'',afectaDisp:rnd()<0.6,etiquetas:'',odometro:'',creadaPor:pick(['Hernán L.','Exequiel D.','Supervisor Añelo','Supervisor Barrancas','Pañol Mendoza']),garantia:false});};
+  issues.forEach(n=>{if(!n.ot)return;const u=unidades.find(x=>x.interno===n.interno);if(!u)return;mkOT(n.ot.replace('OT-',''),u.patente,n.fecha,n.cerrada);});
+  unidades.filter(u=>u.enMant&&u.ot&&rnd()<0.8).forEach(u=>mkOT(u.ot.replace('OT-',''),u.patente,u.fBaja,false));
+  const oi={};ots.forEach(o=>oi[o.numero]=o);
+  issues.forEach(n=>{const o=n.ot&&oi[n.ot.replace('OT-','')];if(!o)return;n.otEstado=o.estado;n.otTaller=o.taller;
+    if(o.estado==='Cerrada'){n.cerrada=true;n.fCierre=o.fFinal||n.fCierre;}else if(o.estado!=='Anulada'){if(n.cerrada)n.reabierta=true;n.cerrada=false;n.fCierre='';n.estadoRaw=o.estado==='Abierta'?'OT abierta':'OT en cierre técnico';}});
+  DEMO_DB={unidades,flota:armarFlota(unidades,[]),issues,sistemas,hoy,ots};
 }
 function demoApi(action){
   if(!DEMO_DB) demoInit();
   const D=DEMO_DB;
   if(action==='datos'){
     const iss=enriquecer(D.issues.map(n=>Object.assign({},n)),D.flota,D.sistemas,D.hoy);
-    return Promise.resolve({ok:true,hoy:_iso(D.hoy),generado:new Date().toLocaleString('es-AR'),issues:iss,unidades:D.flota,
+    return Promise.resolve({ok:true,hoy:_iso(D.hoy),generado:new Date().toLocaleString('es-AR'),issues:iss,unidades:D.flota,ots:D.ots,
       sistemas:D.sistemas.map(s=>({sistema:s.sistema,criticidad:s.criticidad,seguridad:s.seguridad})),diag:{sinVincular:iss.filter(n=>!n.vinculada).length,columnasNoEncontradas:[]}});
   }
   return Promise.resolve({ok:false,error:'Accion no reconocida: '+action});
@@ -788,7 +1127,7 @@ function demoApi(action){
 /* ===================== INICIO ===================== */
 (function init(){
   const h=new Date(), d=new Date(h); d.setDate(d.getDate()-89);
-  $('fDesde').value=_iso(d); $('fHasta').value=_iso(h);
+  $('gDesde').value=_iso(d); $('gHasta').value=_iso(h);
   if(DEMO) $('demoBanner').style.display='block';
   cargar();
 })();
