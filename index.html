@@ -252,16 +252,21 @@ function calcularCriticidad(n,hoy){
   const enPlazo=cerrada&&n.fCierre?_d(n.fCierre)<=fComp:null;
   return {score:s,nivel,motivos:m,dias,vencida,fCompromiso:_iso(fComp),sla,enPlazo};
 }
-function enriquecer(issues,unidades,sistemas,hoy){
-  const idxU={};
+function enriquecer(issues,unidades,sistemas,hoy,vehiculos){
+  const idxU={},idxV={};
   unidades.forEach(u=>{if(u.interno) idxU[_key(u.interno)]=u; if(u.patente) idxU[_key(u.patente)]=u;});
+  (vehiculos||[]).forEach(v=>{if(v.interno) idxV[_key(v.interno)]=v; if(v.patente) idxV[_key(v.patente)]=v;});
   issues.forEach(n=>{
-    const u=idxU[_key(n.interno)]||idxU[_key(n.patente)]||null;
-    n.tipoUnidad=u?u.tipo:''; n.un=u?u.un:''; n.cc=u?u.cc:'';
-    n.estadoUnidad=u?u.estado:'Sin vincular';
-    if(u&&!n.patente) n.patente=u.patente;
-    if(u&&u.interno) n.interno=u.interno;
-    n.vinculada=!!u;
+    const codigo=n.interno;
+    const v=idxV[_key(n.interno)]||idxV[_key(n.patente)]||null;
+    const u=idxU[_key(n.interno)]||idxU[_key(n.patente)]||(v&&(idxU[_key(v.patente)]||idxU[_key(v.interno)]))||null;
+    n.codigoOrigen=codigo;
+    n.patente=(v&&v.patente)||(u&&u.patente)||n.patente||codigo;
+    n.interno=(u&&u.interno)||(v&&v.interno)||codigo;
+    n.tipoUnidad=u?u.tipo:(v?v.tipo:''); n.un=u?u.un:''; n.cc=u?u.cc:(v?v.cc:'');
+    n.grupo=v?v.grupo:''; n.propiedad=v?v.propiedad:''; n.marca=v?(v.marca+' '+v.linea).trim():'';
+    n.vinculada=!!(u||v); n.conEstado=!!u;
+    n.estadoUnidad=u?u.estado:(v?'Sin dato en Estado de Unidades':'No existe en flota CloudFleet');
     n.condicion=u&&u.enMant?'Fuera de servicio':'Operativa';
     const s=clasificar(n,sistemas);
     n.sistema=s.sistema; n.criticidadSistema=s.criticidad;
@@ -336,8 +341,10 @@ async function cargar(forzar){
     poblarFiltros();
     $('hUpd').textContent='Datos '+r.generado+(DIAG.ultimaSync?' · Sync CloudFleet '+DIAG.ultimaSync:'');
     const d=[];
-    if(DIAG.sinVincular) d.push(DIAG.sinVincular+' novedades no se pudieron vincular a una unidad de "Estado de Unidades" (revisar formato de interno/patente).');
-    if(DIAG.columnasNoEncontradas&&DIAG.columnasNoEncontradas.length) d.push('Columnas de ISSUE no reconocidas: '+DIAG.columnasNoEncontradas.join(', ')+' (ver ?action=mapeo).');
+    if(DIAG.vehiculosCargados===0) d.push('Falta la pestaña VEHICULOS (BD-VEHICULOS de CloudFleet): sin ella el cruce depende solo de Estado de Unidades.');
+    if(DIAG.sinVincular) d.push(DIAG.sinVincular+' novedades de vehículos que no existen en la flota de CloudFleet ni en Estado de Unidades. Ej.: '+(DIAG.ejemplosSinVincular||[]).slice(0,8).join(', '));
+    if(DIAG.sinEstado) d.push(DIAG.sinEstado+' novedades de vehículos de CloudFleet sin fila en Estado de Unidades (se toman como operativos). Ej.: '+(DIAG.ejemplosSinEstado||[]).slice(0,8).join(', '));
+    if(DIAG.columnasNoEncontradas&&DIAG.columnasNoEncontradas.length) d.push('Columnas esenciales de ISSUE no reconocidas: '+DIAG.columnasNoEncontradas.join(', ')+' (ver ?action=mapeo).');
     $('diagBanner').style.display=d.length?'block':'none'; $('diagBanner').innerHTML=d.map(esc).join('<br>');
     if(forzar) mostrarToast('Datos actualizados','ok');
     const v=document.querySelector('.view.on'); goTo(v?v.id:'v-dash',false);
@@ -432,7 +439,7 @@ function renderDash(){
   const mx=Math.max(1,...tw.map(t=>Math.max(t.r,t.c)));
   $('chTrend').innerHTML='<div class="trend">'+tw.map(t=>'<div class="w" title="Semana '+fmt(t.a)+': '+t.r+' reportadas / '+t.c+' cerradas"><div class="p"><div style="height:'+(t.r*100/mx)+'%;background:var(--R)"></div><div style="height:'+(t.c*100/mx)+'%;background:var(--G)"></div></div><small>'+t.a.slice(8)+'/'+t.a.slice(5,7)+'</small></div>').join('')+'</div>';
 
-  const ba=contar(K.abiertas,n=>n.un||'Sin vincular'), bp=contar(K.periodo,n=>n.un||'Sin vincular');
+  const ba=contar(K.abiertas,n=>n.un||'Sin dato UN'), bp=contar(K.periodo,n=>n.un||'Sin dato UN');
   $('chUN').innerHTML=bars(uniq([...Object.keys(ba),...Object.keys(bp)]).map(k=>({l:k,v:ba[k]||0,p:bp[k]||0})).sort((a,b)=>b.v-a.v),'var(--B)',i=>i.v+' <small>/ '+i.p+'</small>');
   const sinV=K.abiertas.filter(n=>!n.vinculada).length, otros=K.periodo.filter(n=>n.sistema==='Otros').length, sinCierre=K.B.filter(n=>n.cerrada&&!n.fCierre).length;
   $('chCalidad').innerHTML=bars([
@@ -525,8 +532,8 @@ function abrir(id,push){
     '<b>Responsable</b><span>'+esc(n.responsable||'—')+'</span><b>Estado</b><span>'+esc(n.estadoRaw)+' · '+n.dias+' días</span><b>Prioridad</b><span>'+esc(n.prioridad||'—')+'</span><b>OT</b><span>'+esc(n.ot||'Sin OT')+'</span>'+
     '<b>SLA</b><span>'+n.sla+' d → '+fmt(n.fCompromiso)+(n.vencida?' <span class="chip r">FUERA DE SLA</span>':'')+(n.cerrada?(n.enPlazo===false?' <span class="chip r">cerró fuera de plazo</span>':n.enPlazo?' <span class="chip g">cerró en plazo</span>':''):'')+'</span>'+
     (n.cerrada?'<b>Cierre</b><span>'+fmt(n.fCierre)+'</span>':'')+
-    '<b>Unidad</b><span>'+esc([n.tipoUnidad,n.un].filter(Boolean).join(' · ')||'—')+' · <b>'+esc(n.estadoUnidad)+'</b></span></div>'+
-    (n.vinculada?'<div style="margin-top:12px"><button class="btn lt" onclick="abrirUnidad('+q(n.interno)+')">Ver ficha de la unidad ›</button></div>':'<p class="help" style="color:var(--R)">No se encontró la unidad en "Estado de Unidades" (interno/patente no coincide).</p>')+
+    '<b>Unidad</b><span>'+esc([n.tipoUnidad,n.marca,n.un||n.grupo,n.propiedad].filter(Boolean).join(' · ')||'—')+' · <b>'+esc(n.estadoUnidad)+'</b></span></div>'+
+    (n.vinculada?'<div style="margin-top:12px"><button class="btn lt" onclick="abrirUnidad('+q(n.interno)+')">Ver ficha de la unidad ›</button></div>':'<p class="help" style="color:var(--R)">El código "'+esc(n.codigoOrigen)+'" no existe en la flota de CloudFleet (BD-VEHICULOS) ni en Estado de Unidades.</p>')+
     '</div><p class="help">La novedad se gestiona en el sistema de mantenimiento; este tablero es de consulta y se actualiza solo.</p>';
   goTo('v-det',push);
 }
@@ -656,7 +663,7 @@ function demoApi(action){
   if(!DEMO_DB) demoInit();
   const D=DEMO_DB;
   if(action==='datos'){
-    const iss=enriquecer(D.issues.map(n=>Object.assign({},n)),D.unidades,D.sistemas,D.hoy);
+    const iss=enriquecer(D.issues.map(n=>Object.assign({},n)),D.unidades,D.sistemas,D.hoy,[]);
     return Promise.resolve({ok:true,hoy:_iso(D.hoy),generado:new Date().toLocaleString('es-AR'),issues:iss,unidades:D.unidades,
       sistemas:D.sistemas.map(s=>({sistema:s.sistema,criticidad:s.criticidad,seguridad:s.seguridad})),diag:{sinVincular:iss.filter(n=>!n.vinculada).length,columnasNoEncontradas:[]}});
   }
