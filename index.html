@@ -513,7 +513,6 @@ async function cargar(forzar){
     if(DIAG.sinVincular) d.push(DIAG.sinVincular+' novedades de vehículos que no existen en la flota de CloudFleet ni en Estado de Unidades. Ej.: '+(DIAG.ejemplosSinVincular||[]).slice(0,8).join(', '));
     if(DIAG.sinEstado) d.push(DIAG.sinEstado+' novedades de vehículos de CloudFleet sin fila en Estado de Unidades (se toman como operativos). Ej.: '+(DIAG.ejemplosSinEstado||[]).slice(0,8).join(', '));
     if(DIAG.cf) d.push('Validación CloudFleet (CF_PENDIENTES: '+DIAG.cf.cargados+' pendientes exportadas, hasta N° '+DIAG.cf.maxNumero+'): de '+DIAG.cf.abiertasIsDone+' con isDone=FALSE → '+DIAG.cf.confirmadasCF+' confirmadas + '+DIAG.cf.nuevasPostCF+' posteriores a la exportación se cuentan abiertas; '+DIAG.cf.sinPendienteCF+' excluidas por no figurar pendientes en CloudFleet.');
-    else if(API_URL) d.push('Pendientes según isDone SIN validar contra CloudFleet (pestaña CF_PENDIENTES vacía): el total de abiertas puede estar sobreestimado.');
     if(DIAG.cruceOT){const c=DIAG.cruceOT; if(c.otNoEncontrada||c.otOtraPatente) d.push('Vínculo novedad ↔ OT: '+c.conOT+' novedades con N° de OT · '+c.otNoEncontrada+' OT no encontradas en la pestaña OT'+(c.otOtraPatente?' · '+c.otOtraPatente+' con N° de OT de otra patente (vínculo descartado)':'')+'. Detalle: auditarCruceOT().');}
     if(API_URL&&DIAG.otCargadas===0) d.push('Pestaña OT vacía: ejecutar sincronizarOT() en el editor de Apps Script.');
     if(DIAG.erroresCriterios&&DIAG.erroresCriterios.length) d.push('Matriz de criterios: '+DIAG.erroresCriterios.join(' · '));
@@ -839,7 +838,7 @@ function fichaOT(pat){
 function renderDash(){
   if(!HOY) return;
   const F=filtrosDash(), K=calcular(F);
-  $('dashNota').textContent='Filtros generales arriba. Abiertas, críticas, SLA y sin OT = foto al '+fmt(_iso(HOY))+'. Reportadas, MTTR, plazo y Pareto = período '+fmt(F.desde)+' a '+fmt(F.hasta)+'. Novedades descartadas excluidas.';
+  $('dashNota').textContent='Estado de cada novedad según isDone de CloudFleet (abierta = isDone FALSE). Abiertas, críticas, SLA y sin OT = foto al '+fmt(_iso(HOY))+'. Reportadas, MTTR, plazo y Pareto = período '+fmt(F.desde)+' a '+fmt(F.hasta)+'. Novedades descartadas excluidas.';
   $('kpis').innerHTML=
     kpi('N','Abiertas',K.abiertas.length,'Edad prom. '+K.edadProm.toFixed(1)+' d',"irLista('abiertas')")+
     kpi(K.sinCierreOT.length?'O':'G','Hechas sin cierre de OT',K.sinCierreOT.length,'cerradas en CloudFleet con la OT sin cierre final',"irLista('','','reab')")+
