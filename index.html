@@ -279,13 +279,15 @@ table.hm tr.tot td{border-top:2px solid var(--N);font-weight:700}
     <div class="card"><h3>Pareto de fallas por sistema <small>(los sistemas hasta el 80% acumulado, resaltados)</small></h3><div id="faPareto"></div></div>
     <div class="card"><h3>Repetitividad por sistema</h3><div id="faRepSis"></div></div>
   </div>
-  <div class="card"><h3>Unidades problema <small>(concentran fallas, críticas y reincidencias · candidatas a análisis de causa raíz · clic para ver la ficha)</small></h3><div id="faTop"></div></div>
+  <div id="faDet-sis"></div>
+  <div class="card"><h3>Unidades problema <small>(concentran fallas, críticas y reincidencias · candidatas a análisis de causa raíz · clic para ver sus fallas)</small></h3><div id="faTop"></div><div id="faDet-top"></div></div>
   <div class="card"><h3>Matriz unidad × sistema <small>(cantidad de fallas · 2 o más = falla que se repite en esa unidad)</small></h3><div class="tscroll" id="faMatriz" style="max-height:none"></div>
-    <p class="help"><span class="x x1" style="display:inline-block;padding:0 6px">1</span> una falla · <span class="x x2" style="display:inline-block;padding:0 6px">2</span> se repite · <span class="x x3" style="display:inline-block;padding:0 6px">3+</span> falla crónica</p></div>
+    <p class="help"><span class="x x1" style="display:inline-block;padding:0 6px">1</span> una falla · <span class="x x2" style="display:inline-block;padding:0 6px">2</span> se repite · <span class="x x3" style="display:inline-block;padding:0 6px">3+</span> falla crónica · clic en una celda o patente para ver las fallas</p><div id="faDet-mat"></div></div>
   <div class="grid c2">
     <div class="card"><h3>Fallas por tipo de unidad <small>(normalizado: fallas por unidad)</small></h3><div id="faTipo"></div></div>
     <div class="card"><h3>Fallas por modelo <small>(marca + línea · mínimo 3 unidades · fallas por unidad)</small></h3><div id="faModelo"></div></div>
   </div>
+  <div id="faDet-tipo"></div>
 </main>
 
 <!-- ======================= LISTADO ======================= -->
@@ -875,6 +877,7 @@ function renderFallas(){
   if(!HOY) return;
   const F=GF(); $('faReincD').textContent=CFG.REINC_DIAS;
   const P=vivas().filter(n=>inSel(F.cc,n.un)&&inSel(F.tipo,n.tipoUnidad)&&inSel(F.sis,n.sistema)&&inSel(F.niv,n.nivel)&&patOK(F,n.patente)&&enRango(n.fecha,F)&&n.vinculada);
+  FA_P=P; FA_AB=null; ['sis','top','mat','tipo'].forEach(k=>$('faDet-'+k).innerHTML='');
   const porU={}; P.forEach(n=>(porU[n.patente]=porU[n.patente]||[]).push(n));
   const U=Object.keys(porU), reinc=P.filter(n=>n.reincidente), crit=P.filter(n=>n.criticidadSistema==='Crítico');
   const gapsFlota=[]; U.forEach(p=>gapsFlota.push(..._gaps(porU[p].map(n=>n.fecha))));
@@ -890,14 +893,14 @@ function renderFallas(){
 
   // Pareto por sistema con 80%
   const ps=Object.entries(contar(P,'sistema')).sort((a,b)=>b[1]-a[1]); let cum=0;
-  $('faPareto').innerHTML=ps.length?bars(ps.map(([k,v])=>{const prev=cum;cum+=v;return {l:k,v,ac:pct(cum,P.length),c:pct(prev,P.length)<80?'var(--R)':'var(--GT)',click:'irSistema('+q(k)+')'};}),null,i=>i.v+' <small>'+i.ac+'%</small>')+'<p class="help">Rojo = sistemas que explican el 80% de las fallas (los "pocos vitales"). Clic para filtrar por sistema.</p>':'<div class="empty">Sin fallas en el período</div>';
+  $('faPareto').innerHTML=ps.length?bars(ps.map(([k,v])=>{const prev=cum;cum+=v;return {l:k,v,ac:pct(cum,P.length),c:pct(prev,P.length)<80?'var(--R)':'var(--GT)',click:'faVer(\'sis\',\'s\','+q(k)+')'};}),null,i=>i.v+' <small>'+i.ac+'%</small>')+'<p class="help">Rojo = sistemas que explican el 80% de las fallas (los "pocos vitales"). Clic para ver las fallas de ese sistema.</p>':'<div class="empty">Sin fallas en el período</div>';
 
   // Repetitividad por sistema
   const rs=ps.map(([s])=>{const L=P.filter(n=>n.sistema===s),uu={};L.forEach(n=>(uu[n.patente]=uu[n.patente]||[]).push(n.fecha));
     const g=[];Object.values(uu).forEach(f=>g.push(..._gaps(f)));const r=L.filter(n=>n.reincidente).length;
     return {s,n:L.length,u:Object.keys(uu).length,rep:Object.values(uu).filter(f=>f.length>1).length,r,pr:pct(r,L.length),m:_prom(g)};});
   $('faRepSis').innerHTML=rs.length?'<div class="tscroll" style="max-height:440px"><table class="t"><thead><tr><th>Sistema</th><th>Fallas</th><th>Unidades</th><th>Unid. con 2+</th><th>Reincid.</th><th>MTBF (d)</th></tr></thead><tbody>'+
-    rs.map(x=>'<tr class="rw" onclick="irSistema('+q(x.s)+')"><td><b>'+esc(x.s)+'</b></td><td>'+x.n+'</td><td>'+x.u+'</td><td>'+(x.rep?'<span class="chip a">'+x.rep+'</span>':'0')+'</td><td>'+(x.r?'<span class="chip '+(x.pr>=20?'r':'a')+'">'+x.r+' · '+x.pr+'%</span>':'0')+'</td><td>'+(x.m!==null?x.m.toFixed(0):'—')+'</td></tr>').join('')+'</tbody></table></div>'+
+    rs.map(x=>'<tr class="rw" onclick="faVer(\'sis\',\'s\','+q(x.s)+')"><td><b>'+esc(x.s)+'</b></td><td>'+x.n+'</td><td>'+x.u+'</td><td>'+(x.rep?'<span class="chip a">'+x.rep+'</span>':'0')+'</td><td>'+(x.r?'<span class="chip '+(x.pr>=20?'r':'a')+'">'+x.r+' · '+x.pr+'%</span>':'0')+'</td><td>'+(x.m!==null?x.m.toFixed(0):'—')+'</td></tr>').join('')+'</tbody></table></div>'+
     '<p class="help">MTBF por sistema = días promedio entre dos fallas del mismo sistema en la misma unidad. Cuanto más bajo, más se repite.</p>':'<div class="empty">Sin datos</div>';
 
   // Unidades problema
@@ -906,24 +909,50 @@ function renderFallas(){
     return {p,u,n:L.length,cr,re,ab:L.filter(n=>!n.cerrada).length,ns:Object.keys(sis).length,top,m:_prom(g),ult:L.map(n=>n.fecha).sort().pop(),idx:L.length+cr*2+re*3};})
     .sort((a,b)=>b.idx-a.idx||b.n-a.n).slice(0,25);
   $('faTop').innerHTML=tu.length?'<div class="only-desk"><div class="tscroll" style="max-height:520px"><table class="t"><thead><tr><th>#</th><th>Patente</th><th>Tipo · centro de costos</th><th>Fallas</th><th>En sist. críticos</th><th>Reincid.</th><th>Abiertas hoy</th><th>Sistemas</th><th>Sistema que más falla</th><th>MTBF (d)</th><th>Última</th></tr></thead><tbody>'+
-    tu.map((x,i)=>'<tr class="rw" onclick="abrirUnidad('+q(x.p)+')"><td>'+(i+1)+'</td><td class="nw"><b>'+esc(x.p)+'</b><div class="muted small">'+esc(x.u.interno&&x.u.interno!==x.p?x.u.interno:'')+'</div></td><td>'+esc([x.u.tipo,x.u.un].filter(Boolean).join(' · '))+'</td><td><b>'+x.n+'</b></td><td>'+(x.cr?'<span class="chip r">'+x.cr+'</span>':'0')+'</td><td>'+(x.re?'<span class="chip a">'+x.re+'</span>':'0')+'</td><td>'+x.ab+'</td><td>'+x.ns+'</td><td>'+esc(x.top[0])+' <span class="muted small">('+x.top[1]+')</span></td><td>'+(x.m!==null?x.m.toFixed(0):'—')+'</td><td class="nw">'+fmt(x.ult)+'</td></tr>').join('')+'</tbody></table></div></div>'+
-    '<div class="only-mob">'+tu.map((x,i)=>'<div class="nc '+(x.re?'Crítica':x.cr?'Alta':'')+'" onclick="abrirUnidad('+q(x.p)+')"><div class="top"><span class="u">'+(i+1)+'. '+esc(x.p)+'</span><span class="id">'+x.n+' fallas</span></div><div class="muted small">'+esc([x.u.tipo,x.u.un].filter(Boolean).join(' · '))+'</div><div><span class="chip r">'+x.cr+' críticas</span><span class="chip a">'+x.re+' reincid.</span><span class="chip">'+esc(x.top[0])+' ('+x.top[1]+')</span>'+(x.m!==null?'<span class="chip">MTBF '+x.m.toFixed(0)+' d</span>':'')+'</div></div>').join('')+'</div>'+
+    tu.map((x,i)=>'<tr class="rw" onclick="faVer(\'top\',\'u\','+q(x.p)+')"><td>'+(i+1)+'</td><td class="nw"><b>'+esc(x.p)+'</b><div class="muted small">'+esc(x.u.interno&&x.u.interno!==x.p?x.u.interno:'')+'</div></td><td>'+esc([x.u.tipo,x.u.un].filter(Boolean).join(' · '))+'</td><td><b>'+x.n+'</b></td><td>'+(x.cr?'<span class="chip r">'+x.cr+'</span>':'0')+'</td><td>'+(x.re?'<span class="chip a">'+x.re+'</span>':'0')+'</td><td>'+x.ab+'</td><td>'+x.ns+'</td><td>'+esc(x.top[0])+' <span class="muted small">('+x.top[1]+')</span></td><td>'+(x.m!==null?x.m.toFixed(0):'—')+'</td><td class="nw">'+fmt(x.ult)+'</td></tr>').join('')+'</tbody></table></div></div>'+
+    '<div class="only-mob">'+tu.map((x,i)=>'<div class="nc '+(x.re?'Crítica':x.cr?'Alta':'')+'" onclick="faVer(\'top\',\'u\','+q(x.p)+')"><div class="top"><span class="u">'+(i+1)+'. '+esc(x.p)+'</span><span class="id">'+x.n+' fallas</span></div><div class="muted small">'+esc([x.u.tipo,x.u.un].filter(Boolean).join(' · '))+'</div><div><span class="chip r">'+x.cr+' críticas</span><span class="chip a">'+x.re+' reincid.</span><span class="chip">'+esc(x.top[0])+' ('+x.top[1]+')</span>'+(x.m!==null?'<span class="chip">MTBF '+x.m.toFixed(0)+' d</span>':'')+'</div></div>').join('')+'</div>'+
     '<p class="help">Orden: fallas + 2 × fallas en sistemas críticos + 3 × reincidencias.</p>':'<div class="empty">Sin fallas en el período</div>';
 
   // Matriz unidad × sistema
   const topU=tu.slice(0,20).map(x=>x.p), topS=ps.slice(0,10).map(x=>x[0]);
-  const cel=n=>n?'<td><span class="x x'+Math.min(3,n)+'">'+n+'</span></td>':'<td class="h0">·</td>';
+  const cel=(n,p,s)=>n?'<td style="cursor:pointer" onclick="faVer(\'mat\',\'us\','+q(p+'|'+s)+')"><span class="x x'+Math.min(3,n)+'">'+n+'</span></td>':'<td class="h0">·</td>';
   $('faMatriz').innerHTML=topU.length?'<table class="hm"><thead><tr><th style="text-align:left">Patente</th>'+topS.map(s=>'<th title="'+esc(s)+'">'+esc(s.length>16?s.slice(0,15)+'…':s)+'</th>').join('')+'<th>Total</th></tr></thead><tbody>'+
-    topU.map(p=>{const c=contar(porU[p],'sistema');return '<tr><td class="n" style="cursor:pointer" onclick="abrirUnidad('+q(p)+')">'+esc(p)+'</td>'+topS.map(s=>cel(c[s]||0)).join('')+'<td><b>'+porU[p].length+'</b></td></tr>';}).join('')+'</tbody></table>':'<div class="empty">Sin datos</div>';
+    topU.map(p=>{const c=contar(porU[p],'sistema');return '<tr><td class="n" style="cursor:pointer" onclick="faVer(\'mat\',\'u\','+q(p)+')">'+esc(p)+'</td>'+topS.map(s=>cel(c[s]||0,p,s)).join('')+'<td><b>'+porU[p].length+'</b></td></tr>';}).join('')+'</tbody></table>':'<div class="empty">Sin datos</div>';
 
   // Por tipo de unidad y por modelo (normalizado)
   const norm=(keyU,keyN,min)=>{const nu={},nf={},nc={};FA.forEach(u=>{const k=keyU(u);if(k)nu[k]=(nu[k]||0)+1;});P.forEach(n=>{const u=uDe(n.patente);const k=u?keyU(u):'';if(!k)return;nf[k]=(nf[k]||0)+1;if(n.criticidadSistema==='Crítico')nc[k]=(nc[k]||0)+1;});
     return Object.keys(nu).filter(k=>nu[k]>=min).map(k=>({l:k,u:nu[k],f:nf[k]||0,c:nc[k]||0,v:Math.round((nf[k]||0)/nu[k]*10)/10})).sort((a,b)=>b.v-a.v).slice(0,14);};
   const fmtN=i=>i.v+' <small>'+i.f+' f / '+i.u+' u</small>';
-  $('faTipo').innerHTML=bars(norm(u=>u.tipo,null,1).map(i=>Object.assign(i,{c:'var(--B)'})),null,fmtN);
-  $('faModelo').innerHTML=bars(norm(u=>[u.marca,u.linea].filter(Boolean).join(' '),null,3).map(i=>Object.assign(i,{c:'var(--N)'})),null,fmtN)+'<p class="help">Sirve para comparar modelos con flotas de distinto tamaño: un modelo con muchas fallas por unidad es candidato a revisar el plan preventivo o las especificaciones de compra.</p>';
+  $('faTipo').innerHTML=bars(norm(u=>u.tipo,null,1).map(i=>Object.assign(i,{c:'var(--B)',click:'faVer(\'tipo\',\'t\','+q(i.l)+')'})),null,fmtN);
+  $('faModelo').innerHTML=bars(norm(u=>[u.marca,u.linea].filter(Boolean).join(' '),null,3).map(i=>Object.assign(i,{c:'var(--N)',click:'faVer(\'tipo\',\'m\','+q(i.l)+')'})),null,fmtN)+'<p class="help">Sirve para comparar modelos con flotas de distinto tamaño: un modelo con muchas fallas por unidad es candidato a revisar el plan preventivo o las especificaciones de compra.</p>';
 }
 function irSistema(s){msSet('sis',[s]);onFiltro();}
+let FA_P=[], FA_AB=null;
+/** Desglose: lista las novedades concretas detrás de un número del análisis. donde = panel; tipo: s=sistema, u=unidad, us=unidad|sistema, t=tipo de unidad, m=modelo */
+function faVer(donde,tipo,val){
+  const key=donde+'|'+tipo+'|'+val, box=$('faDet-'+donde);
+  ['sis','top','mat','tipo'].forEach(k=>{if(k!==donde)$('faDet-'+k).innerHTML='';});
+  if(FA_AB===key){box.innerHTML='';FA_AB=null;return;}   // segundo clic: cierra
+  FA_AB=key;
+  let L, tit, acc='';
+  if(tipo==='s'){L=FA_P.filter(n=>n.sistema===val);tit='Sistema: '+val;acc='<button class="btn lt" onclick="irSistema('+q(val)+')">Filtrar todo el tablero por este sistema</button>';}
+  else if(tipo==='u'){L=FA_P.filter(n=>n.patente===val);tit='Unidad '+val;acc='<button class="btn lt" onclick="abrirUnidad('+q(val)+')">Ver ficha de la unidad ›</button>';}
+  else if(tipo==='us'){const [p,s]=val.split('|');L=FA_P.filter(n=>n.patente===p&&n.sistema===s);tit=p+' · '+s;acc='<button class="btn lt" onclick="abrirUnidad('+q(p)+')">Ver ficha de la unidad ›</button>';}
+  else if(tipo==='t'){L=FA_P.filter(n=>{const u=uDe(n.patente);return u&&u.tipo===val;});tit='Tipo de unidad: '+val;}
+  else {L=FA_P.filter(n=>{const u=uDe(n.patente);return u&&[u.marca,u.linea].filter(Boolean).join(' ')===val;});tit='Modelo: '+val;}
+  L=L.slice().sort((a,b)=>b.fecha.localeCompare(a.fecha)||String(b.id).localeCompare(String(a.id),'es',{numeric:true}));
+  const ab=L.filter(n=>!n.cerrada).length, re=L.filter(n=>n.reincidente).length;
+  const fila=n=>'<tr class="rw" onclick="abrir('+q(n.id)+')"><td class="nw">'+fmt(n.fecha)+'</td><td class="nw">'+esc(n.id)+'</td><td class="nw"><b>'+esc(n.patente)+'</b></td><td>'+esc(n.sistema)+'</td><td>'+esc(n.descripcion)+'</td><td>'+(n.cerrada?'<span class="chip g">Cerrada</span>':nv(n.nivel))+(n.reincidente?' <span class="chip a">Reincidente</span>':'')+(n.repeticiones>1?' <span class="chip b">×'+n.repeticiones+'</span>':'')+'</td><td class="nw">'+(n.ot?esc(n.ot)+(n.otEstado?'<div class="muted small">'+esc(n.otEstado)+'</div>':''):'—')+'</td><td class="nw">'+(n.cerrada?fmt(n.fCierre):n.dias+' d')+'</td></tr>';
+  const card=n=>'<div class="nc '+(n.cerrada?'':n.nivel)+'" onclick="abrir('+q(n.id)+')"><div class="top"><span>'+(n.cerrada?'<span class="chip g">Cerrada</span>':nv(n.nivel))+(n.reincidente?' <span class="chip a">Reincidente</span>':'')+'</span><span class="id">N° '+esc(n.id)+' · '+fmt(n.fecha)+'</span></div><div><b>'+esc(n.patente)+'</b> · '+esc(n.sistema)+'</div><div class="d">'+esc(n.descripcion)+'</div><div class="muted small">'+(n.ot?'OT '+esc(n.ot)+(n.otEstado?' ('+esc(n.otEstado)+')':''):'Sin OT')+'</div></div>';
+  const M=L.slice(0,300);
+  box.innerHTML='<div class="card" style="border-left:5px solid var(--R);margin-top:12px">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px"><h3 style="margin:0">'+esc(tit)+' <small>· '+L.length+' fallas · '+ab+' abiertas · '+re+' reincidentes</small></h3>'+
+    '<div class="btnrow">'+acc+'<button class="btn lt" onclick="FA_AB=null;$(\'faDet-'+donde+'\').innerHTML=\'\'">Cerrar ✕</button></div></div>'+
+    (M.length?'<div class="only-desk"><div class="tscroll" style="max-height:460px"><table class="t"><thead><tr><th>Fecha</th><th>N°</th><th>Patente</th><th>Sistema</th><th>Novedad</th><th>Estado</th><th>OT</th><th>Cierre / días</th></tr></thead><tbody>'+M.map(fila).join('')+'</tbody></table></div></div><div class="only-mob">'+M.map(card).join('')+'</div>':'<div class="empty">Sin novedades</div>')+
+    (L.length>300?'<p class="help">Se muestran 300 de '+L.length+'.</p>':'')+'<p class="help">Clic en una novedad para ver su detalle.</p></div>';
+  box.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
 
 /* ===================== TABLERO NOVEDADES ===================== */
 function renderDash(){
