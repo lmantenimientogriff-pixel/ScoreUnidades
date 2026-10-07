@@ -228,44 +228,43 @@ table.hm tr.tot td{border-top:2px solid var(--N);font-weight:700}
   <div class="card">
     <div class="filters">
       <div style="grid-column:span 2"><label>Ver en el listado</label><select id="oEst" onchange="renderOT()">
-        <option value="pend">Sin cierre final (abiertas + cierre técnico)</option><option value="Abierta">Abiertas</option><option value="Cierre técnico">En cierre técnico</option>
-        <option value="tecv">Cierre técnico vencido</option><option value="vest">Vencidas vs fecha estimada</option><option value="afd">Afectan disponibilidad</option>
-        <option value="Cerrada">Cerradas en período</option><option value="Anulada">Anuladas en período</option><option value="todas">Todas</option></select></div>
+        <option value="Abierta">Abiertas</option><option value="Cierre técnico">Cierre técnico</option><option value="Cerrada">Cerradas</option><option value="Anulada">Anuladas</option><option value="todas">Todas</option>
+        <option value="tecv">Cierre técnico hace más de 7 días</option><option value="vest">Abiertas vencidas (fecha estimada)</option><option value="afd">Abiertas que afectan disponibilidad</option></select></div>
       <div class="btnrow"><button class="btn lt" onclick="exportarOTCSV()">CSV</button></div>
     </div>
-    <p class="help"><b>Criterio de cierre:</b> una OT —y la novedad asociada— está cerrada solo con el <b>cierre final</b> (estado Cerrada). <b>Cierre técnico</b> = trabajo terminado sin cierre administrativo: se cuenta como abierta. Anuladas fuera de indicadores. Todos los indicadores y gráficos se calculan sobre las <b>OT creadas en el período</b> (desde/hasta), con su estado actual. La coherencia de datos es la foto de hoy.</p>
+    <p class="help"><b>Estado de la OT = el de CloudFleet</b>: Abierta, Cierre técnico, Cerrada o Anulada, sin reagrupar. Todos los indicadores y gráficos se calculan sobre las <b>OT creadas en el período</b> (desde/hasta) con su estado actual. La coherencia de datos es la foto de hoy.</p>
   </div>
   <div class="kpis" id="okpis"></div>
   <div class="card">
     <h3>Evolución mensual de OT por estado <small>(por mes de creación · estado actual · meses del período)</small></h3>
     <div class="mscroll"><div id="oMesEst"></div></div>
-    <div class="legend" style="display:flex;flex-wrap:wrap;gap:14px;margin-top:6px"><div><i style="background:var(--G)"></i>Cerrada (cierre final)</div><div><i style="background:var(--A)"></i>Cierre técnico</div><div><i style="background:var(--R)"></i>Abierta</div><div><i style="background:#b8bcc6"></i>Anulada</div><div><i style="background:var(--N);height:3px;margin-top:5px"></i>Total creadas</div></div>
+    <div class="legend" style="display:flex;flex-wrap:wrap;gap:14px;margin-top:6px"><div><i style="background:var(--G)"></i>Cerrada</div><div><i style="background:var(--A)"></i>Cierre técnico</div><div><i style="background:var(--R)"></i>Abierta</div><div><i style="background:#b8bcc6"></i>Anulada</div><div><i style="background:var(--N);height:3px;margin-top:5px"></i>Total creadas</div></div>
   </div>
   <div class="card">
     <h3>Flujo mensual de OT <small>(eventos en cada mes del período, sobre OT de los filtros)</small></h3>
     <div class="mscroll"><div id="oMesFlujo"></div></div>
-    <div class="legend" style="display:flex;flex-wrap:wrap;gap:14px;margin-top:6px"><div><i style="background:var(--B)"></i>Creadas</div><div><i style="background:var(--A)"></i>Cierre técnico</div><div><i style="background:var(--G)"></i>Cierre final</div><div><i style="background:var(--N);height:3px;margin-top:5px"></i>Backlog sin cierre final a fin de mes</div></div>
+    <div class="legend" style="display:flex;flex-wrap:wrap;gap:14px;margin-top:6px"><div><i style="background:var(--B)"></i>Creadas</div><div><i style="background:var(--A)"></i>Cierre técnico</div><div><i style="background:var(--G)"></i>Cerradas</div><div><i style="background:var(--N);height:3px;margin-top:5px"></i>OT en estado Abierta a fin de mes</div></div>
   </div>
   <div class="card">
-    <h3>% de cierre final por creador de la OT <small>(OT creadas en el período, sin anuladas · clic en un nombre para filtrar)</small></h3>
+    <h3>% de OT cerradas por creador <small>(OT creadas en el período, sin anuladas · clic en un nombre para filtrar)</small></h3>
     <div id="oCreTabla"></div>
   </div>
   <div class="card">
-    <h3>Evolución mensual del % de cierre final por creador <small>(OT creadas en cada mes, sin anuladas · % con cierre final hoy · n = cantidad)</small></h3>
+    <h3>Evolución mensual del % de OT cerradas por creador <small>(OT creadas en cada mes, sin anuladas · % en estado Cerrada hoy · n = cantidad)</small></h3>
     <div class="tscroll" id="oCreMes" style="max-height:none"></div>
     <p class="help">Verde ≥ 90% · Ámbar 70–89% · Rojo &lt; 70%. Los meses más recientes tienen naturalmente menor % porque hay OT todavía en curso.</p>
   </div>
   <div class="card"><h3>Coherencia de datos <small>(desvíos para corregir en CloudFleet / Estado de Unidades)</small></h3><div id="oCoh"></div></div>
   <div class="card"><h3 id="oTit">Órdenes de trabajo</h3><div class="only-desk"><div class="tscroll" id="oTabla"></div></div><div class="only-mob" id="oCards"></div><p class="help" id="oCount"></p></div>
   <div class="grid c3">
-    <div class="card"><h3>Antigüedad sin cierre final <small>(desde ingreso a taller)</small></h3><div id="oAging"></div></div>
-    <div class="card"><h3>Cierre técnico sin cierre final <small>(días desde cierre técnico)</small></h3><div id="oTec"></div></div>
-    <div class="card"><h3>Sin cierre final por taller</h3><div id="oTalleres"></div></div>
+    <div class="card"><h3>Antigüedad de OT abiertas <small>(desde ingreso a taller)</small></h3><div id="oAging"></div></div>
+    <div class="card"><h3>OT en cierre técnico <small>(días en ese estado)</small></h3><div id="oTec"></div></div>
+    <div class="card"><h3>OT abiertas por taller</h3><div id="oTalleres"></div></div>
   </div>
   <div class="grid c3">
-    <div class="card"><h3>Por tipo de OT <small>(sin cierre final / creadas período)</small></h3><div id="oTipos"></div></div>
-    <div class="card"><h3>Por centro de costos <small>(sin cierre final / creadas período)</small></h3><div id="oCCs"></div></div>
-    <div class="card"><h3>Sin cierre final por creador</h3><div id="oCreadores"></div></div>
+    <div class="card"><h3>Por tipo de OT <small>(abiertas / creadas)</small></h3><div id="oTipos"></div></div>
+    <div class="card"><h3>Por centro de costos <small>(abiertas / creadas)</small></h3><div id="oCCs"></div></div>
+    <div class="card"><h3>OT abiertas por creador</h3><div id="oCreadores"></div></div>
   </div>
 </main>
 
@@ -275,7 +274,7 @@ table.hm tr.tot td{border-top:2px solid var(--N);font-weight:700}
     <div class="filters">
       <div style="grid-column:span 2"><label>Texto en la novedad</label><input id="lQ" placeholder="Descripción, sistema, reportó…" oninput="renderLista()"></div>
       <div><label>Estado</label><select id="lEstado" onchange="renderLista()"></select></div>
-      <div><label>Solo</label><select id="lSolo" onchange="renderLista()"><option value="">—</option><option value="venc">Fuera de SLA</option><option value="fs">Unidad en mantenimiento</option><option value="seg">Impacto seguridad</option><option value="reinc">Reincidentes</option><option value="sinot">Sin OT</option><option value="sinv">Sin vincular a unidad</option><option value="reab">Hechas con OT sin cierre final</option></select></div>
+      <div><label>Solo</label><select id="lSolo" onchange="renderLista()"><option value="">—</option><option value="venc">Fuera de SLA</option><option value="fs">Unidad en mantenimiento</option><option value="seg">Impacto seguridad</option><option value="reinc">Reincidentes</option><option value="sinot">Sin OT</option><option value="sinv">Sin vincular a unidad</option><option value="reab">Hechas con OT no cerrada</option></select></div>
       <div><label>Orden</label><select id="lOrden" onchange="renderLista()"><option value="score">Criticidad</option><option value="dias">Antigüedad</option><option value="fecha">Más recientes</option></select></div>
     </div>
     <p class="help" id="lCount"></p>
@@ -648,7 +647,7 @@ function card(n){
     '<div><b>'+esc(n.sistema)+'</b></div><div class="d">'+esc(n.descripcion)+'</div>'+
     '<div><span class="chip b">'+esc(n.estadoRaw)+'</span>'+(n.condicion==='Fuera de servicio'?'<span class="chip r">Unidad en mant.</span>':'')+'<span class="chip">'+n.dias+' d</span>'+
     (n.vencida?'<span class="chip r">Fuera de SLA</span>':'')+(n.impSeg==='Sí'?'<span class="chip r">Seguridad</span>':'')+(n.impAmb==='Sí'?'<span class="chip a">Ambiental</span>':'')+
-    (n.repeticiones>1?'<span class="chip b">Reportada '+n.repeticiones+' veces</span>':'')+(n.reincidente?'<span class="chip a">Reincidente</span>':'')+(n.ot?chipOT(n.otEstado,'OT '+n.ot)+(n.sinCierreOT?'<span class="chip a">OT sin cierre final</span>':''):(n.cerrada?'':n.cierreSinOT?'<span class="chip">Sin OT req.</span>':'<span class="chip a">Sin OT</span>'))+'</div></div>';
+    (n.repeticiones>1?'<span class="chip b">Reportada '+n.repeticiones+' veces</span>':'')+(n.reincidente?'<span class="chip a">Reincidente</span>':'')+(n.ot?chipOT(n.otEstado,'OT '+n.ot)+(n.sinCierreOT?'<span class="chip a">OT no cerrada</span>':''):(n.cerrada?'':n.cierreSinOT?'<span class="chip">Sin OT req.</span>':'<span class="chip a">Sin OT</span>'))+'</div></div>';
 }
 
 /* ===================== GRÁFICOS MENSUALES (SVG) ===================== */
@@ -718,23 +717,23 @@ function renderOT(){
   if(!HOY) return;
   const F=GF(), hoyI=_iso(HOY), lim=otLimTec(), est=$('oEst').value;
   const B=filtrarOTs(F), P=B.filter(o=>enRango(o.fCreada,F));   // P = OT creadas en el período: base de todos los indicadores
-  const pend=P.filter(o=>!otFin(o)), ab=pend.filter(o=>o.estado==='Abierta'), tec=pend.filter(o=>o.estado==='Cierre técnico');
-  const tecV=tec.filter(o=>(otDiasTec(o)||0)>lim), vEst=ab.filter(o=>o.fEstimada&&o.fEstimada<hoyI), afd=pend.filter(o=>o.afectaDisp);
+  const ab=P.filter(o=>o.estado==='Abierta'), tec=P.filter(o=>o.estado==='Cierre técnico'), pend=ab;
+  const tecV=tec.filter(o=>(otDiasTec(o)||0)>lim), vEst=ab.filter(o=>o.fEstimada&&o.fEstimada<hoyI), afd=ab.filter(o=>o.afectaDisp);
   const creP=P, creV=creP.filter(o=>o.estado!=='Anulada'), cerP=P.filter(o=>o.estado==='Cerrada'), anuP=creP.filter(o=>o.estado==='Anulada');
   const avg=a=>{const v=a.filter(x=>x!==null&&x!==undefined);return v.length?v.reduce((s,x)=>s+x,0)/v.length:0;};
   const mttr=avg(cerP.map(otDias)), tT=avg(cerP.map(o=>_dd(otIngreso(o),o.fTecnico))), tA=avg(cerP.map(o=>_dd(o.fTecnico,o.fFinal)));
   const edadAb=avg(ab.map(otDias)), tecProm=avg(tec.map(otDiasTec)), pcf=pct(creV.filter(o=>o.estado==='Cerrada').length,creV.length);
   $('okpis').innerHTML=
-    kpi('N','Sin cierre final',pend.length,ab.length+' abiertas · '+tec.length+' cierre técnico',"verOT('pend')")+
-    kpi('R','Abiertas',ab.length,'edad prom. '+edadAb.toFixed(1)+' d',"verOT('Abierta')")+
-    kpi(tec.length?'O':'G','En cierre técnico',tec.length,'prom. '+tecProm.toFixed(1)+' d sin cierre final',"verOT('Cierre técnico')")+
-    kpi(tecV.length?'R':'G','Cierre técnico > '+lim+' d',tecV.length,'desvío: falta cierre final',"verOT('tecv')")+
-    kpi(vEst.length?'R':'G','Vencidas',vEst.length,'abiertas con fecha estimada pasada',"verOT('vest')")+
-    kpi(afd.length?'O':'G','Afectan disponibilidad',afd.length,'sin cierre final',"verOT('afd')")+
-    kpi('B','Creadas período',creP.length,anuP.length+' anuladas ('+pct(anuP.length,creP.length)+'%)')+
-    kpi(pcf>=90?'G':pcf>=70?'A':'R','% cierre final',creV.length?pcf+'%':'—','de las creadas en período (sin anuladas)')+
-    kpi('G','Con cierre final',cerP.length,'de las creadas en período',"verOT('Cerrada')")+
-    kpi(mttr>10?'A':'G','MTTR OT',mttr.toFixed(1)+' d','técnico '+tT.toFixed(1)+' d + administrativo '+tA.toFixed(1)+' d');
+    kpi('B','Creadas período',creP.length,'OT creadas entre las fechas del filtro',"verOT('todas')")+
+    kpi('R','Abiertas',ab.length,pct(ab.length,creP.length)+'% · edad prom. '+edadAb.toFixed(1)+' d',"verOT('Abierta')")+
+    kpi(tec.length?'O':'G','Cierre técnico',tec.length,pct(tec.length,creP.length)+'% · prom. '+tecProm.toFixed(1)+' d en ese estado',"verOT('Cierre técnico')")+
+    kpi('G','Cerradas',cerP.length,pct(cerP.length,creP.length)+'% de las creadas',"verOT('Cerrada')")+
+    kpi('N','Anuladas',anuP.length,pct(anuP.length,creP.length)+'% de las creadas',"verOT('Anulada')")+
+    kpi(pcf>=90?'G':pcf>=70?'A':'R','% cerradas',creV.length?pcf+'%':'—','sin contar anuladas')+
+    kpi(tecV.length?'R':'G','Cierre técnico > '+lim+' d',tecV.length,'pendientes de pasar a Cerrada',"verOT('tecv')")+
+    kpi(vEst.length?'R':'G','Abiertas vencidas',vEst.length,'fecha estimada pasada',"verOT('vest')")+
+    kpi(afd.length?'O':'G','Afectan disponibilidad',afd.length,'OT abiertas',"verOT('afd')")+
+    kpi(mttr>10?'A':'G','MTTR OT',mttr.toFixed(1)+' d','ingreso → Cerrada · técnico '+tT.toFixed(1)+' d + adm. '+tA.toFixed(1)+' d');
 
   // Evolución mensual por estado (mes de creación) y flujo mensual
   const M12=mesesRango(F);
@@ -744,14 +743,14 @@ function renderOT(){
   const finMes=k=>{const [y,mm]=k.split('-').map(Number);return _iso(new Date(y,mm,0));};
   $('oMesFlujo').innerHTML=graficoAgrupado(M12.map(m=>{const fm=finMes(m.k),ref=fm>hoyI?hoyI:fm;
     return {l:m.l,v:{cr:B.filter(o=>o.fCreada&&o.fCreada.slice(0,7)===m.k).length,te:B.filter(o=>o.fTecnico&&o.fTecnico.slice(0,7)===m.k).length,fi:B.filter(o=>o.estado==='Cerrada'&&o.fFinal&&o.fFinal.slice(0,7)===m.k).length,
-      bk:B.filter(o=>o.estado!=='Anulada'&&o.fCreada&&o.fCreada<=ref&&!(o.estado==='Cerrada'&&o.fFinal&&o.fFinal<=ref)).length}};}),
-    [{k:'cr',l:'Creadas',c:'#378ADD'},{k:'te',l:'Cierre técnico',c:'#EF9F27'},{k:'fi',l:'Cierre final',c:'#1D9E75'}],{k:'bk',l:'Backlog sin cierre final'});
+      bk:B.filter(o=>o.estado!=='Anulada'&&o.fCreada&&o.fCreada<=ref&&!(o.fTecnico&&o.fTecnico<=ref)&&!(o.fFinal&&o.fFinal<=ref)).length}};}),
+    [{k:'cr',l:'Creadas',c:'#378ADD'},{k:'te',l:'Cierre técnico',c:'#EF9F27'},{k:'fi',l:'Cerradas',c:'#1D9E75'}],{k:'bk',l:'Abiertas a fin de mes'});
   scrollFin('oMesFlujo');
 
-  // % cierre final por creador (período)
+  // % de OT cerradas por creador (período)
   const porC={};creV.forEach(o=>{const c=o.creadaPor||'Sin dato';(porC[c]=porC[c]||[]).push(o);});
   const filasC=Object.entries(porC).map(([c,L])=>{const ce=L.filter(o=>o.estado==='Cerrada');return {c,n:L.length,ce:ce.length,te:L.filter(o=>o.estado==='Cierre técnico').length,ab:L.filter(o=>o.estado==='Abierta').length,p:pct(ce.length,L.length),d:avg(ce.map(o=>_dd(o.fCreada,o.fFinal)))};}).sort((a,b)=>b.n-a.n);
-  $('oCreTabla').innerHTML=filasC.length?'<div class="tscroll" style="max-height:420px"><table class="t"><thead><tr><th>Creador</th><th>Creadas</th><th>Cierre final</th><th>Cierre técnico</th><th>Abiertas</th><th style="min-width:200px">% cierre final</th><th>Días prom. a cierre final</th></tr></thead><tbody>'+
+  $('oCreTabla').innerHTML=filasC.length?'<div class="tscroll" style="max-height:420px"><table class="t"><thead><tr><th>Creador</th><th>Creadas</th><th>Cerradas</th><th>Cierre técnico</th><th>Abiertas</th><th style="min-width:200px">% cerradas</th><th>Días prom. hasta Cerrada</th></tr></thead><tbody>'+
     filasC.map(r=>'<tr class="rw" onclick="filtrarCreador('+q(r.c)+')"><td><b>'+esc(r.c)+'</b></td><td>'+r.n+'</td><td>'+r.ce+'</td><td>'+(r.te?'<span class="chip a">'+r.te+'</span>':'0')+'</td><td>'+(r.ab?'<span class="chip r">'+r.ab+'</span>':'0')+'</td>'+
       '<td><div style="display:flex;align-items:center;gap:8px"><div class="bar-track" style="flex:1"><div class="bar-fill" style="width:'+r.p+'%;background:'+semaf(r.p)+'"></div></div><b style="min-width:38px;text-align:right">'+r.p+'%</b></div></td><td>'+(r.ce?r.d.toFixed(1):'—')+'</td></tr>').join('')+
     '</tbody></table></div>':'<div class="empty">Sin OT creadas en el período</div>';
@@ -767,8 +766,8 @@ function renderOT(){
 
   // Coherencia
   const reab=ISS.filter(n=>n.sinCierreOT&&!n.descartada&&inSel(F.cc,n.un)&&patOK(F,n.patente));
-  const FA=flotaActiva().filter(u=>inSel(F.cc,u.un)&&inSel(F.tipo,u.tipo)&&patOK(F,u.patente)), pendPat=new Set(OTS.filter(o=>!otFin(o)).map(o=>_key(o.patente)));
-  const afdPat=new Set(OTS.filter(o=>!otFin(o)&&o.afectaDisp).map(o=>_key(o.patente)));
+  const FA=flotaActiva().filter(u=>inSel(F.cc,u.un)&&inSel(F.tipo,u.tipo)&&patOK(F,u.patente)), pendPat=new Set(OTS.filter(o=>o.estado==='Abierta').map(o=>_key(o.patente)));
+  const afdPat=new Set(OTS.filter(o=>o.estado==='Abierta'&&o.afectaDisp).map(o=>_key(o.patente)));
   const idxOT={};OTS.forEach(o=>idxOT[o.numero]=o);
   const mantSinOT=FA.filter(u=>u.enMant&&!pendPat.has(_key(u.patente)));
   const dispConOT=FA.filter(u=>u.tieneEstado!==false&&!u.enMant&&afdPat.has(_key(u.patente)));
@@ -776,8 +775,8 @@ function renderOT(){
   const blk=(tit,arr,item,txt)=>'<details style="margin-bottom:8px"><summary>'+(arr.length?'<span class="chip r">'+arr.length+'</span>':'<span class="chip g">0</span>')+' '+tit+'</summary><p class="help">'+txt+'</p><div style="margin-top:6px">'+(arr.length?arr.slice(0,60).map(item).join(''):'<span class="muted small">Sin desvíos</span>')+(arr.length>60?' <span class="muted small">… y '+(arr.length-60)+' más</span>':'')+'</div></details>';
   const chU=u=>'<span class="chip b" style="cursor:pointer" onclick="abrirUnidad('+q(u.patente)+')">'+esc(u.patente)+'</span>';
   $('oCoh').innerHTML=
-    blk('Novedades marcadas como hechas en CloudFleet con OT sin cierre final',reab,n=>'<span class="chip a" style="cursor:pointer" onclick="abrir('+q(n.id)+')">N° '+esc(n.id)+' · '+esc(n.patente)+' · OT '+esc(n.ot)+' ('+esc(n.otEstado)+')</span>','En Novedades cuentan como cerradas (isDone), pero la OT no tiene cierre final. Es el caso detectado en auditoría: completar el cierre final de la OT.')+
-    blk('OT en cierre técnico hace más de '+lim+' días',tecV.slice().sort((a,b)=>otDiasTec(b)-otDiasTec(a)),o=>'<span class="chip a" style="cursor:pointer" onclick="abrirOT('+q(o.numero)+')">OT '+esc(o.numero)+' · '+esc(o.patente)+' · '+otDiasTec(o)+' d · '+esc(o.creadaPor||'—')+'</span>','Trabajo terminado sin cierre administrativo. Parámetro: OT_DIAS_CIERRE_FINAL en Code.gs.')+
+    blk('Novedades hechas en CloudFleet con la OT en Abierta o Cierre técnico',reab,n=>'<span class="chip a" style="cursor:pointer" onclick="abrir('+q(n.id)+')">N° '+esc(n.id)+' · '+esc(n.patente)+' · OT '+esc(n.ot)+' ('+esc(n.otEstado)+')</span>','En Novedades cuentan como cerradas (isDone), pero su OT todavía no está Cerrada. Es el caso detectado en auditoría.')+
+    blk('OT en Cierre técnico hace más de '+lim+' días',tecV.slice().sort((a,b)=>otDiasTec(b)-otDiasTec(a)),o=>'<span class="chip a" style="cursor:pointer" onclick="abrirOT('+q(o.numero)+')">OT '+esc(o.numero)+' · '+esc(o.patente)+' · '+otDiasTec(o)+' d · '+esc(o.creadaPor||'—')+'</span>','OT que siguen en Cierre técnico y no pasaron a Cerrada. Parámetro: OT_DIAS_CIERRE_FINAL en Code.gs.')+
     blk('Unidades EN MANTENIMIENTO (Estado de Unidades) sin OT abierta',mantSinOT,chU,'Falta abrir la OT en CloudFleet o el estado de la unidad no está actualizado.')+
     blk('Unidades DISPONIBLES con OT abierta que afecta disponibilidad',dispConOT,chU,'La OT indica unidad no disponible pero Estado de Unidades la muestra operativa: verificar cuál está mal.')+
     blk('Unidades en mantenimiento cuya OT de Estado de Unidades ya está cerrada',euOTcerr,u=>'<span class="chip b" style="cursor:pointer" onclick="abrirUnidad('+q(u.patente)+')">'+esc(u.patente)+' · OT '+esc(u.ot)+'</span>','La OT cargada en Estado de Unidades figura cerrada/anulada en CloudFleet: actualizar el estado de la unidad o la OT de referencia.');
@@ -786,15 +785,14 @@ function renderOT(){
   let L, tit;
   const per=o=>o.estado==='Cerrada'?enRango(o.fFinal,F):enRango(o.fCreada,F);
   switch(est){
-    case 'Abierta': L=ab; tit='OT abiertas'; break;
-    case 'Cierre técnico': L=tec; tit='OT en cierre técnico'; break;
-    case 'tecv': L=tecV; tit='OT en cierre técnico hace más de '+lim+' días'; break;
+    case 'Cierre técnico': L=tec; tit='OT en Cierre técnico'; break;
+    case 'tecv': L=tecV; tit='OT en Cierre técnico hace más de '+lim+' días'; break;
     case 'vest': L=vEst; tit='OT abiertas vencidas (fecha estimada)'; break;
-    case 'afd': L=afd; tit='OT sin cierre final que afectan disponibilidad'; break;
-    case 'Cerrada': L=cerP; tit='OT creadas en período con cierre final'; break;
-    case 'Anulada': L=anuP; tit='OT anuladas en período'; break;
-    case 'todas': L=P; tit='Todas las OT creadas en el período'; break;
-    default: L=pend; tit='OT sin cierre final';
+    case 'afd': L=afd; tit='OT abiertas que afectan disponibilidad'; break;
+    case 'Cerrada': L=cerP; tit='OT cerradas'; break;
+    case 'Anulada': L=anuP; tit='OT anuladas'; break;
+    case 'todas': L=P; tit='Todas las OT'; break;
+    default: L=ab; tit='OT abiertas';
   }
   L=L.slice().sort((a,b)=>otFin(a)&&otFin(b)?String(b.fFinal||b.fCreada).localeCompare(String(a.fFinal||a.fCreada)):otDias(b)-otDias(a));
   OT_L=L;
@@ -804,14 +802,14 @@ function renderOT(){
     return '<tr class="rw'+(venc||(dT||0)>lim?' venc':'')+'" onclick="abrirOT('+q(o.numero)+')"><td class="nw"><b>'+esc(o.numero)+'</b></td><td>'+chipOT(o.estado)+(o.afectaDisp&&!otFin(o)?'<div><span class="chip r">Afecta disp.</span></div>':'')+'</td><td class="nw"><b>'+esc(o.patente)+'</b></td><td>'+esc(o.tipo)+'</td><td>'+esc(o.taller||'—')+'</td><td>'+esc(ccOT(o)||'—')+'</td><td>'+esc(o.creadaPor||'—')+'</td>'+
       '<td class="nw">'+fmt(otIngreso(o))+'</td><td><b>'+otDias(o)+'</b></td><td class="nw">'+fmt(o.fEstimada)+(venc?' <span class="chip r">venc.</span>':'')+'</td><td class="nw">'+fmt(o.fTecnico)+(dT!==null?' <span class="chip '+(dT>lim?'r':'a')+'">'+dT+' d</span>':'')+'</td><td class="nw">'+fmt(o.fFinal)+'</td>'+
       '<td>'+esc([o.motivo,o.falla].filter(Boolean).join(' · ')||'—')+'</td><td>'+(nov.length?'<span class="chip b">'+nov.length+'</span>':'')+'</td></tr>';};
-  $('oTabla').innerHTML=Mx.length?'<table class="t"><thead><tr><th>N° OT</th><th>Estado</th><th>Patente</th><th>Tipo</th><th>Taller</th><th>Centro costos</th><th>Creada por</th><th>Ingreso</th><th>Días</th><th>Estimada</th><th>Cierre técnico</th><th>Cierre final</th><th>Motivo / falla</th><th>Nov.</th></tr></thead><tbody>'+Mx.map(fila).join('')+'</tbody></table>':'<div class="empty">Sin OT para este filtro</div>';
+  $('oTabla').innerHTML=Mx.length?'<table class="t"><thead><tr><th>N° OT</th><th>Estado</th><th>Patente</th><th>Tipo</th><th>Taller</th><th>Centro costos</th><th>Creada por</th><th>Ingreso</th><th>Días</th><th>Estimada</th><th>Fecha cierre técnico</th><th>Fecha cerrada</th><th>Motivo / falla</th><th>Nov.</th></tr></thead><tbody>'+Mx.map(fila).join('')+'</tbody></table>':'<div class="empty">Sin OT para este filtro</div>';
   $('oCards').innerHTML=Mx.length?Mx.slice(0,150).map(cardOT).join(''):'<div class="empty">Sin OT para este filtro</div>';
   $('oCount').textContent=L.length>400?'Se muestran 400 de '+L.length+' (usar filtros o exportar CSV).':'';
 
   // Gráficos de barras
   const bk=[['0–3 días',0,3,'var(--G)'],['4–7 días',4,7,'var(--A)'],['8–15 días',8,15,'var(--O)'],['16–30 días',16,30,'var(--R)'],['> 30 días',31,1e9,'#7a0000']];
   $('oAging').innerHTML=bars(bk.map(b=>({l:b[0],v:pend.filter(o=>{const d=otDias(o);return d>=b[1]&&d<=b[2];}).length,c:b[3]})));
-  $('oTec').innerHTML=bars(bk.map(b=>({l:b[0],v:tec.filter(o=>{const d=otDiasTec(o)||0;return d>=b[1]&&d<=b[2];}).length,c:b[1]>lim?'var(--R)':'var(--A)'})))+'<p class="help">Rojo = supera '+lim+' días sin cierre final.</p>';
+  $('oTec').innerHTML=bars(bk.map(b=>({l:b[0],v:tec.filter(o=>{const d=otDiasTec(o)||0;return d>=b[1]&&d<=b[2];}).length,c:b[1]>lim?'var(--R)':'var(--A)'})))+'<p class="help">Rojo = más de '+lim+' días en Cierre técnico sin pasar a Cerrada.</p>';
   $('oTalleres').innerHTML=bars(Object.entries(contar(pend,o=>o.taller||'Sin taller')).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([k,v])=>({l:k,v,c:'var(--N)'})));
   const dual=(fn)=>{const a=contar(pend,fn),p=contar(creP,fn);return uniq([...Object.keys(a),...Object.keys(p)]).map(k=>({l:k,v:a[k]||0,p:p[k]||0})).sort((x,y)=>y.v-x.v||y.p-x.p).slice(0,12);};
   $('oTipos').innerHTML=bars(dual(o=>o.tipo||'Sin tipo'),'var(--B)',i=>i.v+' <small>/ '+i.p+'</small>');
@@ -825,11 +823,11 @@ function abrirOT(num,push){
   $('otInfo').innerHTML='<div class="card nc '+(o.estado==='Abierta'?'Crítica':o.estado==='Cierre técnico'?'Alta':'')+'" style="cursor:default">'+
     '<div class="top"><span>'+chipOT(o.estado)+' <b style="font-size:16px">OT '+esc(o.numero)+'</b></span><span class="id">'+esc(o.estadoRaw)+'</span></div>'+
     '<div class="u" style="margin:6px 0">'+esc(o.patente)+(u?' <span class="muted small" style="font-weight:400">'+esc([u.interno!==u.patente?u.interno:'',u.tipo,u.un].filter(Boolean).join(' · '))+'</span>':'')+'</div>'+
-    (o.estado==='Cierre técnico'?'<div style="margin-bottom:8px"><span class="chip '+(dT>otLimTec()?'r':'a')+'">Cierre técnico hace '+dT+' días · falta cierre final</span></div>':'')+
+    (o.estado==='Cierre técnico'?'<div style="margin-bottom:8px"><span class="chip '+(dT>otLimTec()?'r':'a')+'">Cierre técnico hace '+dT+' días · todavía no pasó a Cerrada</span></div>':'')+
     '<div class="kv"><b>Tipo</b><span>'+esc(o.tipo||'—')+'</span><b>Motivo</b><span>'+esc(o.motivo||'—')+'</span><b>Falla detectada</b><span>'+esc(o.falla||'—')+'</span>'+(o.comentario?'<b>Comentarios</b><span>'+esc(o.comentario)+'</span>':'')+
     '<b>Taller / proveedor</b><span>'+esc(o.taller||'—')+'</span><b>Centro de costos</b><span>'+esc(ccOT(o)||'—')+'</span><b>Creada por</b><span>'+esc(o.creadaPor||'—')+' · '+fmt(o.fCreada)+'</span>'+
     '<b>Ingreso a taller</b><span>'+fmt(otIngreso(o))+'</span><b>Fecha estimada</b><span>'+fmt(o.fEstimada)+(o.estado==='Abierta'&&o.fEstimada&&o.fEstimada<_iso(HOY)?' <span class="chip r">vencida</span>':'')+'</span>'+
-    '<b>Cierre técnico</b><span>'+fmt(o.fTecnico)+'</span><b>Cierre final</b><span>'+fmt(o.fFinal)+'</span><b>Días</b><span>'+otDias(o)+(o.estado==='Cerrada'?' (ingreso → cierre final)':' (en curso)')+'</span>'+
+    '<b>Fecha cierre técnico</b><span>'+fmt(o.fTecnico)+'</span><b>Fecha cerrada</b><span>'+fmt(o.fFinal)+'</span><b>Días</b><span>'+otDias(o)+(o.estado==='Cerrada'?' (ingreso → Cerrada)':' (en curso)')+'</span>'+
     '<b>Afecta disponibilidad</b><span>'+(o.afectaDisp?'Sí':'No')+'</span>'+(o.etiquetas?'<b>Etiquetas</b><span>'+esc(o.etiquetas)+'</span>':'')+(o.odometro?'<b>Odómetro</b><span>'+esc(o.odometro)+'</span>':'')+'</div>'+
     '<div style="margin-top:12px"><button class="btn lt" onclick="abrirUnidad('+q(o.patente)+')">Ver ficha de la unidad ›</button></div></div>'+
     '<div class="card"><h3>Novedades vinculadas ('+nov.length+')</h3>'+(nov.length?nov.map(card).join(''):'<div class="empty">Ninguna novedad de la sincronización apunta a esta OT</div>')+'</div>';
@@ -843,7 +841,7 @@ function exportarOTCSV(){
 }
 function fichaOT(pat){
   const L=OTS.filter(o=>_key(o.patente)===_key(pat)), p=L.filter(o=>!otFin(o)).sort((a,b)=>otDias(b)-otDias(a)), c=L.filter(o=>o.estado==='Cerrada').sort((a,b)=>String(b.fFinal).localeCompare(String(a.fFinal))).slice(0,10);
-  return '<div class="card"><h3>Órdenes de trabajo sin cierre final ('+p.length+')</h3>'+(p.length?p.map(cardOT).join(''):'<div class="empty">Sin OT abiertas</div>')+'</div>'+
+  return '<div class="card"><h3>OT abiertas y en cierre técnico ('+p.length+')</h3>'+(p.length?p.map(cardOT).join(''):'<div class="empty">Sin OT abiertas</div>')+'</div>'+
     '<div class="card"><h3>Últimas OT cerradas <small>('+L.filter(o=>o.estado==='Cerrada').length+' en 12 meses)</small></h3>'+(c.length?c.map(cardOT).join(''):'<div class="empty">Sin OT cerradas en el período sincronizado</div>')+'</div>';
 }
 
@@ -854,7 +852,7 @@ function renderDash(){
   $('dashNota').textContent='Todos los indicadores y gráficos = novedades reportadas entre '+fmt(F.desde)+' y '+fmt(F.hasta)+' (estado actual según isDone de CloudFleet). Única excepción: "En mantenimiento / Disponibilidad", que es la foto de hoy de Estado de Unidades.';
   $('kpis').innerHTML=
     kpi('N','Abiertas',K.abiertas.length,'Edad prom. '+K.edadProm.toFixed(1)+' d'+(K.repetidas?' · '+K.repetidas+' reportes repetidos agrupados':''),"irLista('abiertas')")+
-    kpi(K.sinCierreOT.length?'O':'G','Hechas sin cierre de OT',K.sinCierreOT.length,'cerradas en CloudFleet con la OT sin cierre final',"irLista('','','reab')")+
+    kpi(K.sinCierreOT.length?'O':'G','Hechas con OT no cerrada',K.sinCierreOT.length,'novedad hecha, OT en Abierta o Cierre técnico',"irLista('','','reab')")+
     kpi('R','Críticas abiertas',K.criticas.length,K.seg.length+' en sistemas de seguridad',"irLista('abiertas','Crítica')")+
     kpi(K.vencidas.length?'R':'G','Fuera de SLA',K.vencidas.length,pct(K.vencidas.length,K.abiertas.length)+'% de abiertas',"irLista('abiertas','','venc')")+
     kpi(K.sinOT.length?'O':'G','Sin OT',K.sinOT.length,'requieren OT y no la tienen',"irLista('abiertas','','sinot')")+
@@ -983,7 +981,7 @@ function abrir(id,push){
     '<div style="margin-bottom:10px">'+n.motivos.map(m=>'<span class="chip r">'+esc(m)+'</span>').join('')+'</div>'+
     '<div class="kv"><b>Novedad</b><span>'+esc(n.descripcion)+'</span><b>Categoría sistema</b><span>'+esc(n.categoria||'—')+'</span><b>Clasificación</b><span>'+esc(n.sistema)+' ('+esc(n.criticidadSistema)+')</span>'+
     '<b>Reportó</b><span>'+esc(n.reporta||'—')+' · '+fmt(n.fecha)+(n.odometro?' · '+esc(n.odometro)+' km':'')+'</span>'+
-    '<b>Responsable</b><span>'+esc(n.responsable||'—')+'</span><b>Estado</b><span>'+esc(n.estadoRaw)+' · '+n.dias+' días</span><b>Prioridad</b><span>'+esc(n.prioridad||'—')+'</span><b>OT</b><span>'+(n.ot?esc(n.ot)+' '+chipOT(n.otEstado,n.otEstado||'—')+(n.otTaller?' · '+esc(n.otTaller):'')+(n.sinCierreOT?' <span class="chip a">Novedad hecha en CloudFleet, pero la OT no tiene cierre final</span>':''):'Sin OT')+'</span>'+
+    '<b>Responsable</b><span>'+esc(n.responsable||'—')+'</span><b>Estado</b><span>'+esc(n.estadoRaw)+' · '+n.dias+' días</span><b>Prioridad</b><span>'+esc(n.prioridad||'—')+'</span><b>OT</b><span>'+(n.ot?esc(n.ot)+' '+chipOT(n.otEstado,n.otEstado||'—')+(n.otTaller?' · '+esc(n.otTaller):'')+(n.sinCierreOT?' <span class="chip a">Novedad hecha en CloudFleet, pero la OT no está Cerrada</span>':''):'Sin OT')+'</span>'+
     '<b>SLA</b><span>'+n.sla+' d → '+fmt(n.fCompromiso)+(n.vencida?' <span class="chip r">FUERA DE SLA</span>':'')+(n.cerrada?(n.enPlazo===false?' <span class="chip r">cerró fuera de plazo</span>':n.enPlazo?' <span class="chip g">cerró en plazo</span>':''):'')+'</span>'+
     (n.cerrada?'<b>Cierre</b><span>'+fmt(n.fCierre)+'</span>':'')+
     '<b>Unidad</b><span>'+esc([n.tipoUnidad,n.marca,n.un||n.grupo,n.propiedad].filter(Boolean).join(' · ')||'—')+' · <b>'+esc(n.estadoUnidad)+'</b></span></div>'+
