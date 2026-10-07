@@ -175,7 +175,7 @@ table.hm tr.tot td{border-top:2px solid var(--N);font-weight:700}
     <div id="topCrit"></div>
   </div>
   <div class="card">
-    <h3>Evolución mensual de novedades <small>(por mes de reporte · estado actual · últimos 12 meses · respeta los filtros generales salvo el período)</small></h3>
+    <h3>Evolución mensual de novedades <small>(por mes de reporte · estado actual · meses del período filtrado · respeta todos los filtros)</small></h3>
     <div class="mscroll"><div id="chMes"></div></div>
     <div class="legend" style="display:flex;flex-wrap:wrap;gap:14px;margin-top:6px"><div><i style="background:var(--G)"></i>Cerradas (% del mes)</div><div><i style="background:var(--R)"></i>Abiertas (% del mes)</div><div><i style="background:var(--N);height:3px;margin-top:5px"></i>Total reportadas</div></div>
   </div>
@@ -189,7 +189,7 @@ table.hm tr.tot td{border-top:2px solid var(--N);font-weight:700}
     <div class="card"><h3>Unidades con más novedades <small>(período)</small></h3><div id="chUnidades"></div></div>
   </div>
   <div class="grid c3">
-    <div class="card"><h3>Tendencia semanal <small>(12 semanas)</small></h3><div id="chTrend"></div>
+    <div class="card"><h3>Tendencia semanal <small>(últimas 12 semanas del período · novedades del período)</small></h3><div id="chTrend"></div>
       <div class="legend" style="display:flex;gap:14px;margin-top:6px"><div><i style="background:var(--R)"></i>Reportadas</div><div><i style="background:var(--G)"></i>Cerradas</div></div></div>
     <div class="card"><h3>Por centro de costos <small>(abiertas / período)</small></h3><div id="chUN"></div></div>
     <div class="card"><h3>Calidad del dato</h3><div id="chCalidad"></div></div>
@@ -233,16 +233,16 @@ table.hm tr.tot td{border-top:2px solid var(--N);font-weight:700}
         <option value="Cerrada">Cerradas en período</option><option value="Anulada">Anuladas en período</option><option value="todas">Todas</option></select></div>
       <div class="btnrow"><button class="btn lt" onclick="exportarOTCSV()">CSV</button></div>
     </div>
-    <p class="help"><b>Criterio de cierre:</b> una OT —y la novedad asociada— está cerrada solo con el <b>cierre final</b> (estado Cerrada). <b>Cierre técnico</b> = trabajo terminado sin cierre administrativo: se cuenta como abierta. Anuladas fuera de indicadores. El período (desde/hasta) aplica a creadas, cerradas, MTTR y % de cierre por creador; los gráficos mensuales muestran siempre los últimos 12 meses.</p>
+    <p class="help"><b>Criterio de cierre:</b> una OT —y la novedad asociada— está cerrada solo con el <b>cierre final</b> (estado Cerrada). <b>Cierre técnico</b> = trabajo terminado sin cierre administrativo: se cuenta como abierta. Anuladas fuera de indicadores. Todos los indicadores y gráficos se calculan sobre las <b>OT creadas en el período</b> (desde/hasta), con su estado actual. La coherencia de datos es la foto de hoy.</p>
   </div>
   <div class="kpis" id="okpis"></div>
   <div class="card">
-    <h3>Evolución mensual de OT por estado <small>(por mes de creación · estado actual · últimos 12 meses · anuladas aparte)</small></h3>
+    <h3>Evolución mensual de OT por estado <small>(por mes de creación · estado actual · meses del período)</small></h3>
     <div class="mscroll"><div id="oMesEst"></div></div>
     <div class="legend" style="display:flex;flex-wrap:wrap;gap:14px;margin-top:6px"><div><i style="background:var(--G)"></i>Cerrada (cierre final)</div><div><i style="background:var(--A)"></i>Cierre técnico</div><div><i style="background:var(--R)"></i>Abierta</div><div><i style="background:#b8bcc6"></i>Anulada</div><div><i style="background:var(--N);height:3px;margin-top:5px"></i>Total creadas</div></div>
   </div>
   <div class="card">
-    <h3>Flujo mensual de OT <small>(cantidad de eventos en cada mes · últimos 12 meses)</small></h3>
+    <h3>Flujo mensual de OT <small>(eventos en cada mes del período, sobre OT de los filtros)</small></h3>
     <div class="mscroll"><div id="oMesFlujo"></div></div>
     <div class="legend" style="display:flex;flex-wrap:wrap;gap:14px;margin-top:6px"><div><i style="background:var(--B)"></i>Creadas</div><div><i style="background:var(--A)"></i>Cierre técnico</div><div><i style="background:var(--G)"></i>Cierre final</div><div><i style="background:var(--N);height:3px;margin-top:5px"></i>Backlog sin cierre final a fin de mes</div></div>
   </div>
@@ -435,14 +435,18 @@ function enriquecer(issues, flota, sistemas, hoy) {
     n.impSeg=s.seguridad==='Sí'?'Sí':'No';
     n.impAmb=(s.ambiental==='Sí'||/derram|fuga|perdida de (aceite|gasoil|combustible|producto|fluido|liquido)|goteo/.test(_norm(n.descripcion)))?'Sí':'No';
   });
+  const abiertasPorClave={};
+  issues.filter(n=>!n.cerrada&&!n.descartada).sort((a,b)=>a.fecha.localeCompare(b.fecha)||String(a.id).localeCompare(String(b.id),'es',{numeric:true}))
+    .forEach(n=>{const k=_key(n.interno)+'|'+_norm(n.categoria)+'|'+_norm(n.descripcion);const p=abiertasPorClave[k];
+      if(!p){abiertasPorClave[k]=n;n.repeticiones=1;return;}
+      p.repeticiones++;n.repetida=true;n.descartada=true;n.estadoRaw='Repetida (agrupada en N° '+p.id+')';});
   const grupos={};
-  issues.forEach(n=>{const k=_key(n.interno)+'|'+n.sistema;(grupos[k]=grupos[k]||[]).push(n);});
+  issues.forEach(n=>{if(n.descartada)return;const k=_key(n.interno)+'|'+n.sistema;(grupos[k]=grupos[k]||[]).push(n);});
   issues.forEach(n=>{
-    const f=_d(n.fecha);
-    n.reincidente=grupos[_key(n.interno)+'|'+n.sistema].some(o=>{
-      if(o===n||o.descartada) return false;
-      const dd=Math.round((f-_d(o.fecha))/864e5);
-      return (dd>0&&dd<=CFG.REINC_DIAS)||(dd===0&&String(o.id)<String(n.id));
+    n.reincidente=!n.descartada&&grupos[_key(n.interno)+'|'+n.sistema].some(o=>{
+      if(o===n||!o.cerrada||!o.fCierre||o.fCierre>n.fecha) return false;
+      const dd=Math.round((_d(n.fecha)-_d(o.fCierre))/864e5);
+      return dd>=0&&dd<=CFG.REINC_DIAS;
     });
     Object.assign(n,calcularCriticidad(n,hoy));
   });
@@ -615,11 +619,12 @@ function enRango(iso,F){return iso&&(!F.desde||iso>=F.desde)&&(!F.hasta||iso<=F.
 function calcular(F){
   const B=vivas().filter(n=>inSel(F.cc,n.un)&&inSel(F.tipo,n.tipoUnidad)&&inSel(F.sis,n.sistema)&&inSel(F.niv,n.nivel)&&patOK(F,n.patente));
   const U=flotaActiva().filter(u=>inSel(F.cc,u.un)&&inSel(F.tipo,u.tipo)&&patOK(F,u.patente)), UE=U.filter(u=>u.tieneEstado!==false);
-  const abiertas=B.filter(n=>!n.cerrada), periodo=B.filter(n=>enRango(n.fecha,F)), cerradasP=B.filter(n=>n.cerrada&&enRango(n.fCierre,F));
+  // Todo se calcula sobre las novedades REPORTADAS en el período (desde/hasta): abiertas = las de ese período que siguen abiertas hoy.
+  const periodo=B.filter(n=>enRango(n.fecha,F)), abiertas=periodo.filter(n=>!n.cerrada), cerradasP=periodo.filter(n=>n.cerrada);
   const conPlazo=cerradasP.filter(n=>n.enPlazo!==null), mant=U.filter(u=>u.enMant);
   return {B,U,abiertas,periodo,cerradasP,mant,
     criticas:abiertas.filter(n=>n.nivel==='Crítica'),vencidas:abiertas.filter(n=>n.vencida),seg:abiertas.filter(n=>n.impSeg==='Sí'),
-    sinOT:abiertas.filter(n=>!n.ot&&!n.cierreSinOT),sinCierreOT:B.filter(n=>n.sinCierreOT),reinc:periodo.filter(n=>n.reincidente),
+    sinOT:abiertas.filter(n=>!n.ot&&!n.cierreSinOT),repetidas:ISS.filter(n=>n.repetida&&enRango(n.fecha,F)&&inSel(F.cc,n.un)&&inSel(F.tipo,n.tipoUnidad)&&inSel(F.sis,n.sistema)&&patOK(F,n.patente)).length,sinCierreOT:periodo.filter(n=>n.sinCierreOT),reinc:periodo.filter(n=>n.reincidente),
     mttr:cerradasP.length?cerradasP.reduce((a,n)=>a+n.dias,0)/cerradasP.length:0,
     enPlazo:pct(conPlazo.filter(n=>n.enPlazo).length,conPlazo.length),nPlazo:conPlazo.length,
     edadProm:abiertas.length?abiertas.reduce((a,n)=>a+n.dias,0)/abiertas.length:0,
@@ -643,11 +648,17 @@ function card(n){
     '<div><b>'+esc(n.sistema)+'</b></div><div class="d">'+esc(n.descripcion)+'</div>'+
     '<div><span class="chip b">'+esc(n.estadoRaw)+'</span>'+(n.condicion==='Fuera de servicio'?'<span class="chip r">Unidad en mant.</span>':'')+'<span class="chip">'+n.dias+' d</span>'+
     (n.vencida?'<span class="chip r">Fuera de SLA</span>':'')+(n.impSeg==='Sí'?'<span class="chip r">Seguridad</span>':'')+(n.impAmb==='Sí'?'<span class="chip a">Ambiental</span>':'')+
-    (n.reincidente?'<span class="chip a">Reincidente</span>':'')+(n.ot?chipOT(n.otEstado,'OT '+n.ot)+(n.sinCierreOT?'<span class="chip a">OT sin cierre final</span>':''):(n.cerrada?'':n.cierreSinOT?'<span class="chip">Sin OT req.</span>':'<span class="chip a">Sin OT</span>'))+'</div></div>';
+    (n.repeticiones>1?'<span class="chip b">Reportada '+n.repeticiones+' veces</span>':'')+(n.reincidente?'<span class="chip a">Reincidente</span>':'')+(n.ot?chipOT(n.otEstado,'OT '+n.ot)+(n.sinCierreOT?'<span class="chip a">OT sin cierre final</span>':''):(n.cerrada?'':n.cierreSinOT?'<span class="chip">Sin OT req.</span>':'<span class="chip a">Sin OT</span>'))+'</div></div>';
 }
 
 /* ===================== GRÁFICOS MENSUALES (SVG) ===================== */
 const MESES_ES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+function mesesRango(F){
+  const fin=F&&F.hasta?_d(F.hasta):HOY, ini=F&&F.desde?_d(F.desde):new Date(fin.getFullYear(),fin.getMonth()-11,1), m=[];
+  let d=new Date(ini.getFullYear(),ini.getMonth(),1); const lim=new Date(fin.getFullYear(),fin.getMonth(),1);
+  while(d<=lim){m.push({k:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),l:MESES_ES[d.getMonth()]+' '+String(d.getFullYear()).slice(2)});d=new Date(d.getFullYear(),d.getMonth()+1,1);}
+  return m.slice(-24);
+}
 function ultimos12(){const m=[];for(let i=11;i>=0;i--){const d=new Date(HOY.getFullYear(),HOY.getMonth()-i,1);m.push({k:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),l:MESES_ES[d.getMonth()]+' '+String(d.getFullYear()).slice(2)});}return m;}
 function _paso(v){const r=v/5,p=Math.pow(10,Math.floor(Math.log10(r)));return [1,2,5,10].map(x=>x*p).find(x=>x>=r);}
 function _ejes(W,H,ml,mr,mt,mb,max){const ph=H-mt-mb,st=_paso(Math.max(5,max)),top=Math.ceil(max*1.12/st)*st||st,y=v=>mt+ph-v*ph/top;let s='';for(let v=0;v<=top;v+=st)s+='<line x1="'+ml+'" x2="'+(W-mr)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="#e0e2e8"/><text x="'+(ml-6)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="11" fill="#6b7280">'+v+'</text>';return {s,y,ph,top};}
@@ -681,10 +692,10 @@ function graficoAgrupado(M,series,linea){
   return s+'</svg>';
 }
 /** Novedades por mes de reporte: cerradas / abiertas (estado actual). */
-function graficoMensual(B){
-  const M=ultimos12().map(m=>{const L=B.filter(n=>n.fecha&&n.fecha.slice(0,7)===m.k);return {l:m.l,v:{c:L.filter(n=>n.cerrada).length,a:L.filter(n=>!n.cerrada).length}};});
+function graficoMensual(B,F){
+  const M=mesesRango(F).map(m=>{const L=B.filter(n=>n.fecha&&enRango(n.fecha,F)&&n.fecha.slice(0,7)===m.k);return {l:m.l,v:{c:L.filter(n=>n.cerrada).length,a:L.filter(n=>!n.cerrada).length}};});
   const tt=M.reduce((s,m)=>s+m.v.c+m.v.a,0), tc=M.reduce((s,m)=>s+m.v.c,0);
-  return graficoApilado(M,[{k:'c',l:'Cerradas',c:'#1D9E75'},{k:'a',l:'Abiertas',c:'#C00000'}],'12 meses: '+tt+' reportadas · '+pct(tc,tt)+'% cerradas · '+(tt-tc)+' abiertas');
+  return graficoApilado(M,[{k:'c',l:'Cerradas',c:'#1D9E75'},{k:'a',l:'Abiertas',c:'#C00000'}],'Período: '+tt+' reportadas · '+pct(tc,tt)+'% cerradas · '+(tt-tc)+' abiertas');
 }
 function scrollFin(id){const sc=$(id).parentElement;sc.scrollLeft=sc.scrollWidth;}
 
@@ -706,10 +717,10 @@ function filtrarCreador(c){msSet('cre',[c]);onFiltro();}
 function renderOT(){
   if(!HOY) return;
   const F=GF(), hoyI=_iso(HOY), lim=otLimTec(), est=$('oEst').value;
-  const B=filtrarOTs(F);
-  const pend=B.filter(o=>!otFin(o)), ab=pend.filter(o=>o.estado==='Abierta'), tec=pend.filter(o=>o.estado==='Cierre técnico');
+  const B=filtrarOTs(F), P=B.filter(o=>enRango(o.fCreada,F));   // P = OT creadas en el período: base de todos los indicadores
+  const pend=P.filter(o=>!otFin(o)), ab=pend.filter(o=>o.estado==='Abierta'), tec=pend.filter(o=>o.estado==='Cierre técnico');
   const tecV=tec.filter(o=>(otDiasTec(o)||0)>lim), vEst=ab.filter(o=>o.fEstimada&&o.fEstimada<hoyI), afd=pend.filter(o=>o.afectaDisp);
-  const creP=B.filter(o=>enRango(o.fCreada,F)), creV=creP.filter(o=>o.estado!=='Anulada'), cerP=B.filter(o=>o.estado==='Cerrada'&&enRango(o.fFinal,F)), anuP=creP.filter(o=>o.estado==='Anulada');
+  const creP=P, creV=creP.filter(o=>o.estado!=='Anulada'), cerP=P.filter(o=>o.estado==='Cerrada'), anuP=creP.filter(o=>o.estado==='Anulada');
   const avg=a=>{const v=a.filter(x=>x!==null&&x!==undefined);return v.length?v.reduce((s,x)=>s+x,0)/v.length:0;};
   const mttr=avg(cerP.map(otDias)), tT=avg(cerP.map(o=>_dd(otIngreso(o),o.fTecnico))), tA=avg(cerP.map(o=>_dd(o.fTecnico,o.fFinal)));
   const edadAb=avg(ab.map(otDias)), tecProm=avg(tec.map(otDiasTec)), pcf=pct(creV.filter(o=>o.estado==='Cerrada').length,creV.length);
@@ -722,12 +733,12 @@ function renderOT(){
     kpi(afd.length?'O':'G','Afectan disponibilidad',afd.length,'sin cierre final',"verOT('afd')")+
     kpi('B','Creadas período',creP.length,anuP.length+' anuladas ('+pct(anuP.length,creP.length)+'%)')+
     kpi(pcf>=90?'G':pcf>=70?'A':'R','% cierre final',creV.length?pcf+'%':'—','de las creadas en período (sin anuladas)')+
-    kpi('G','Cerradas período',cerP.length,'cierre final en período',"verOT('Cerrada')")+
+    kpi('G','Con cierre final',cerP.length,'de las creadas en período',"verOT('Cerrada')")+
     kpi(mttr>10?'A':'G','MTTR OT',mttr.toFixed(1)+' d','técnico '+tT.toFixed(1)+' d + administrativo '+tA.toFixed(1)+' d');
 
   // Evolución mensual por estado (mes de creación) y flujo mensual
-  const M12=ultimos12();
-  $('oMesEst').innerHTML=graficoApilado(M12.map(m=>{const L=B.filter(o=>o.fCreada&&o.fCreada.slice(0,7)===m.k);return {l:m.l,v:{c:L.filter(o=>o.estado==='Cerrada').length,t:L.filter(o=>o.estado==='Cierre técnico').length,a:L.filter(o=>o.estado==='Abierta').length,x:L.filter(o=>o.estado==='Anulada').length}};}),
+  const M12=mesesRango(F);
+  $('oMesEst').innerHTML=graficoApilado(M12.map(m=>{const L=P.filter(o=>o.fCreada&&o.fCreada.slice(0,7)===m.k);return {l:m.l,v:{c:L.filter(o=>o.estado==='Cerrada').length,t:L.filter(o=>o.estado==='Cierre técnico').length,a:L.filter(o=>o.estado==='Abierta').length,x:L.filter(o=>o.estado==='Anulada').length}};}),
     [{k:'c',l:'Cerrada',c:'#1D9E75'},{k:'t',l:'Cierre técnico',c:'#EF9F27'},{k:'a',l:'Abierta',c:'#C00000'},{k:'x',l:'Anulada',c:'#b8bcc6'}]);
   scrollFin('oMesEst');
   const finMes=k=>{const [y,mm]=k.split('-').map(Number);return _iso(new Date(y,mm,0));};
@@ -746,11 +757,11 @@ function renderOT(){
     '</tbody></table></div>':'<div class="empty">Sin OT creadas en el período</div>';
 
   // Matriz mensual por creador (12 meses)
-  const B12=B.filter(o=>o.estado!=='Anulada'&&o.fCreada&&o.fCreada.slice(0,7)>=M12[0].k);
+  const B12=P.filter(o=>o.estado!=='Anulada'&&o.fCreada);
   const vol={};B12.forEach(o=>{const c=o.creadaPor||'Sin dato';vol[c]=(vol[c]||0)+1;});
   const top=Object.keys(vol).sort((a,b)=>vol[b]-vol[a]).slice(0,15);
   const celda=L=>{if(!L.length)return '<td><span class="muted">—</span></td>';const p=pct(L.filter(o=>o.estado==='Cerrada').length,L.length);return '<td><span class="c" style="background:'+semaf(p)+'">'+p+'%</span><small>n='+L.length+'</small></td>';};
-  $('oCreMes').innerHTML=top.length?'<table class="hm"><thead><tr><th style="text-align:left">Creador</th>'+M12.map(m=>'<th>'+m.l+'</th>').join('')+'<th>12 meses</th></tr></thead><tbody>'+
+  $('oCreMes').innerHTML=top.length?'<table class="hm"><thead><tr><th style="text-align:left">Creador</th>'+M12.map(m=>'<th>'+m.l+'</th>').join('')+'<th>Período</th></tr></thead><tbody>'+
     top.map(c=>{const Lc=B12.filter(o=>(o.creadaPor||'Sin dato')===c);return '<tr><td class="n" title="'+esc(c)+'" style="cursor:pointer" onclick="filtrarCreador('+q(c)+')">'+esc(c)+'</td>'+M12.map(m=>celda(Lc.filter(o=>o.fCreada.slice(0,7)===m.k))).join('')+celda(Lc)+'</tr>';}).join('')+
     '<tr class="tot"><td class="n">Total</td>'+M12.map(m=>celda(B12.filter(o=>o.fCreada.slice(0,7)===m.k))).join('')+celda(B12)+'</tr></tbody></table>'+(Object.keys(vol).length>15?'<p class="help">Se muestran los 15 creadores con más OT. Usá el filtro "Creador de la OT" para ver otros.</p>':''):'<div class="empty">Sin datos</div>';
 
@@ -780,9 +791,9 @@ function renderOT(){
     case 'tecv': L=tecV; tit='OT en cierre técnico hace más de '+lim+' días'; break;
     case 'vest': L=vEst; tit='OT abiertas vencidas (fecha estimada)'; break;
     case 'afd': L=afd; tit='OT sin cierre final que afectan disponibilidad'; break;
-    case 'Cerrada': L=cerP; tit='OT cerradas en período'; break;
+    case 'Cerrada': L=cerP; tit='OT creadas en período con cierre final'; break;
     case 'Anulada': L=anuP; tit='OT anuladas en período'; break;
-    case 'todas': L=B.filter(o=>!otFin(o)||per(o)); tit='Todas (sin cierre final + período)'; break;
+    case 'todas': L=P; tit='Todas las OT creadas en el período'; break;
     default: L=pend; tit='OT sin cierre final';
   }
   L=L.slice().sort((a,b)=>otFin(a)&&otFin(b)?String(b.fFinal||b.fCreada).localeCompare(String(a.fFinal||a.fCreada)):otDias(b)-otDias(a));
@@ -840,18 +851,18 @@ function fichaOT(pat){
 function renderDash(){
   if(!HOY) return;
   const F=filtrosDash(), K=calcular(F);
-  $('dashNota').textContent='Estado de cada novedad según isDone de CloudFleet (abierta = isDone FALSE). Abiertas, críticas, SLA y sin OT = foto al '+fmt(_iso(HOY))+'. Reportadas, MTTR, plazo y Pareto = período '+fmt(F.desde)+' a '+fmt(F.hasta)+'. Novedades descartadas excluidas.';
+  $('dashNota').textContent='Todos los indicadores y gráficos = novedades reportadas entre '+fmt(F.desde)+' y '+fmt(F.hasta)+' (estado actual según isDone de CloudFleet). Única excepción: "En mantenimiento / Disponibilidad", que es la foto de hoy de Estado de Unidades.';
   $('kpis').innerHTML=
-    kpi('N','Abiertas',K.abiertas.length,'Edad prom. '+K.edadProm.toFixed(1)+' d',"irLista('abiertas')")+
+    kpi('N','Abiertas',K.abiertas.length,'Edad prom. '+K.edadProm.toFixed(1)+' d'+(K.repetidas?' · '+K.repetidas+' reportes repetidos agrupados':''),"irLista('abiertas')")+
     kpi(K.sinCierreOT.length?'O':'G','Hechas sin cierre de OT',K.sinCierreOT.length,'cerradas en CloudFleet con la OT sin cierre final',"irLista('','','reab')")+
     kpi('R','Críticas abiertas',K.criticas.length,K.seg.length+' en sistemas de seguridad',"irLista('abiertas','Crítica')")+
     kpi(K.vencidas.length?'R':'G','Fuera de SLA',K.vencidas.length,pct(K.vencidas.length,K.abiertas.length)+'% de abiertas',"irLista('abiertas','','venc')")+
     kpi(K.sinOT.length?'O':'G','Sin OT',K.sinOT.length,'requieren OT y no la tienen',"irLista('abiertas','','sinot')")+
-    kpi('R','En mantenimiento',K.mant.length,'Disponibilidad '+K.disp+'% ('+K.UE.length+' u. con estado)',"goTo('v-flota')")+
-    kpi('B','Reportadas período',K.periodo.length,K.cerradasP.length+' cerradas en período')+
+    kpi('R','En mantenimiento hoy',K.mant.length,'Disponibilidad '+K.disp+'% ('+K.UE.length+' u. con estado) · foto actual',"goTo('v-flota')")+
+    kpi('B','Reportadas período',K.periodo.length,K.cerradasP.length+' ya cerradas ('+pct(K.cerradasP.length,K.periodo.length)+'%)')+
     kpi(K.mttr>7?'A':'G','MTTR',K.mttr.toFixed(1)+' d','tiempo medio de cierre')+
     kpi(K.enPlazo>=85?'G':K.enPlazo>=70?'A':'R','Cierre en SLA',K.nPlazo?K.enPlazo+'%':'—','meta ≥ 85% · n='+K.nPlazo)+
-    kpi(K.reinc.length?'O':'G','Reincidencias',K.reinc.length,pct(K.reinc.length,K.periodo.length)+'% · misma patente+sistema ≤'+CFG.REINC_DIAS+' d',"irLista('','','reinc')");
+    kpi(K.reinc.length?'O':'G','Reincidencias',K.reinc.length,pct(K.reinc.length,K.periodo.length)+'% · misma patente+sistema ≤'+CFG.REINC_DIAS+' d después de cerrada',"irLista('','','reinc')");
 
   const top=K.abiertas.slice().sort((a,b)=>b.score-a.score||b.dias-a.dias).slice(0,10);
   $('topCrit').innerHTML=top.length?'<div class="only-desk"><table class="t"><thead>'+HEAD_NOV+'</thead><tbody>'+top.map(filaNov).join('')+'</tbody></table></div><div class="only-mob">'+top.map(card).join('')+'</div>':'<div class="empty">Sin novedades abiertas</div>';
@@ -871,12 +882,12 @@ function renderDash(){
   $('chUnidades').innerHTML=bars(Object.entries(cu).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>{const u=UNI.find(x=>x.patente===k);return {l:k+(u?' · '+u.tipo:''),v,r:ru[k]||0,c:ru[k]?'var(--O)':'var(--N)',click:'abrirUnidad('+q(k)+')'};}),null,i=>i.v+(i.r?' <small>R'+i.r+'</small>':''))+
     '<p class="help">Naranja = con reincidencias. Candidatas a análisis de causa raíz / revisión del plan preventivo.</p>';
 
-  $('chMes').innerHTML=graficoMensual(K.B);
+  $('chMes').innerHTML=graficoMensual(K.B,F);
   scrollFin('chMes');   // en celular arranca mostrando los meses recientes
 
-  const wk=[]; const lunes=new Date(HOY); lunes.setDate(lunes.getDate()-((lunes.getDay()+6)%7));
+  const wk=[]; const refS=F.hasta?_d(F.hasta):HOY, lunes=new Date(refS); lunes.setDate(lunes.getDate()-((lunes.getDay()+6)%7));
   for(let i=11;i>=0;i--){const d=new Date(lunes);d.setDate(d.getDate()-7*i);const h=new Date(d);h.setDate(h.getDate()+6);wk.push([_iso(d),_iso(h)]);}
-  const tw=wk.map(([a,b])=>({a,r:K.B.filter(n=>n.fecha>=a&&n.fecha<=b).length,c:K.B.filter(n=>n.cerrada&&n.fCierre>=a&&n.fCierre<=b).length}));
+  const tw=wk.filter(([a,b])=>!F.desde||b>=F.desde).map(([a,b])=>({a,r:K.periodo.filter(n=>n.fecha>=a&&n.fecha<=b).length,c:K.periodo.filter(n=>n.cerrada&&n.fCierre>=a&&n.fCierre<=b).length}));
   const mx=Math.max(1,...tw.map(t=>Math.max(t.r,t.c)));
   $('chTrend').innerHTML='<div class="trend">'+tw.map(t=>'<div class="w" title="Semana '+fmt(t.a)+': '+t.r+' reportadas / '+t.c+' cerradas"><div class="p"><div style="height:'+(t.r*100/mx)+'%;background:var(--R)"></div><div style="height:'+(t.c*100/mx)+'%;background:var(--G)"></div></div><small>'+t.a.slice(8)+'/'+t.a.slice(5,7)+'</small></div>').join('')+'</div>';
 
@@ -897,7 +908,7 @@ function renderReglas(){
   $('reglas').innerHTML='<div class="grid c2"><table class="rules"><tr><th>Factor (automático, sin carga manual)</th><th>Puntos</th></tr>'+
     fila('Sistema crítico / mayor / menor (por categoría o palabras clave)',CFG.PESO_SISTEMA['Crítico']+' / '+CFG.PESO_SISTEMA['Mayor']+' / '+CFG.PESO_SISTEMA['Menor'])+fila('Unidad en mantenimiento (Estado de Unidades)',CFG.PESO_COND['Fuera de servicio'])+
     fila('Sistema con impacto en seguridad',CFG.IMP_SEG)+fila('Riesgo ambiental (cisterna/hidráulico o “pérdida/derrame/fuga”)',CFG.IMP_AMB)+fila('Prioridad alta cargada en el sistema',CFG.PRIO_ALTA)+
-    fila('Reincidente (misma patente + sistema ≤ '+CFG.REINC_DIAS+' d)',CFG.REINC)+'<tr><th colspan="2">Agravantes de gestión (solo abiertas · suben máx. '+CFG.TOPE_NIVELES_GESTION+' nivel)</th></tr>'+fila('Fuera de SLA',CFG.VENCIDA)+fila('Antigüedad &gt; '+CFG.AGING.slice().reverse().map(a=>a.dias).join(' / &gt; ')+' días',CFG.AGING.slice().reverse().map(a=>a.pts).join(' / '))+fila('Abierta sin OT (no aplica a sistemas con “Cierre sin OT”)',CFG.SIN_OT)+'</table>'+
+    fila('Reincidente (misma patente + sistema, ≤ '+CFG.REINC_DIAS+' d después de cerrada la anterior)',CFG.REINC)+'<tr><th colspan="2">Agravantes de gestión (solo abiertas · suben máx. '+CFG.TOPE_NIVELES_GESTION+' nivel)</th></tr>'+fila('Fuera de SLA',CFG.VENCIDA)+fila('Antigüedad &gt; '+CFG.AGING.slice().reverse().map(a=>a.dias).join(' / &gt; ')+' días',CFG.AGING.slice().reverse().map(a=>a.pts).join(' / '))+fila('Abierta sin OT (no aplica a sistemas con “Cierre sin OT”)',CFG.SIN_OT)+'</table>'+
     '<table class="rules"><tr><th>Nivel</th><th>Score · SLA de cierre</th></tr>'+
     NIVELES.map((l,i)=>'<tr><td>'+nv(l)+'</td><td>'+rng[i]+' · '+CFG.SLA_DIAS[l]+' día(s)</td></tr>').join('')+
     (CFG.REGLA_SEG!==false?'<tr><td colspan="2" class="small"><b>Regla de bloqueo:</b> novedad en sistema de seguridad con la unidad operando → Crítica automática.</td></tr>':'')+'<tr><td colspan="2" class="small">Valores vigentes de la pestaña <b>Criterios</b> (Score de Mantenimiento). Cambios registrados en Criterios_Log.</td></tr>'+'<tr><td colspan="2" class="small"><b>Equipamiento</b> (sistemas con “Nivel fijo” en la pestaña Sistemas): nivel <b>Baja</b>; si la novedad viene con prioridad alta en CloudFleet → <b>Alta</b>. No escala por antigüedad ni por la regla de bloqueo; el atraso se ve como “Fuera de SLA”.</td></tr>'+
@@ -944,7 +955,7 @@ function filtrarLista(){
   const L=vivas().filter(n=>{
     if(e==='abiertas'&&n.cerrada) return false; if(e&&e!=='abiertas'&&n.estadoRaw!==e) return false;
     if(F.niv.length&&(!F.niv.includes(n.nivel)||n.cerrada)) return false; if(!inSel(F.cc,n.un)||!inSel(F.sis,n.sistema)||!inSel(F.tipo,n.tipoUnidad)||!patOK(F,n.patente)) return false;
-    if((F.desde||F.hasta)&&e!=='abiertas'&&s!=='reab'&&!(enRango(n.fecha,F)||(!n.cerrada))) return false;
+    if((F.desde||F.hasta)&&!enRango(n.fecha,F)) return false;
     if(s==='venc'&&!n.vencida) return false; if(s==='fs'&&(n.condicion!=='Fuera de servicio'||n.cerrada)) return false;
     if(s==='seg'&&n.impSeg!=='Sí') return false; if(s==='reinc'&&!n.reincidente) return false;
     if(s==='sinot'&&(n.ot||n.cerrada||n.cierreSinOT)) return false; if(s==='sinv'&&n.vinculada) return false; if(s==='reab'&&!n.sinCierreOT) return false;
