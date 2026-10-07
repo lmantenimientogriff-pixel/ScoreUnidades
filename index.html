@@ -177,7 +177,7 @@ table.hm tr.tot td{border-top:2px solid var(--N);font-weight:700}
   <div class="card">
     <h3>Evolución mensual de novedades <small>(por mes de reporte · estado actual · meses del período filtrado · respeta todos los filtros)</small></h3>
     <div class="mscroll"><div id="chMes"></div></div>
-    <div class="legend" style="display:flex;flex-wrap:wrap;gap:14px;margin-top:6px"><div><i style="background:var(--G)"></i>Cerradas (% del mes)</div><div><i style="background:var(--R)"></i>Abiertas (% del mes)</div><div><i style="background:var(--N);height:3px;margin-top:5px"></i>Total reportadas</div></div>
+    <div class="legend" style="display:flex;flex-wrap:wrap;gap:14px;margin-top:6px"><div><i style="background:var(--G)"></i>Cerradas (% del mes)</div><div><i style="background:var(--R)"></i>Abiertas (% del mes)</div><div><i style="background:#b8bcc6"></i>Repetidas (misma falla abierta, reportada otra vez)</div><div><i style="background:var(--N);height:3px;margin-top:5px"></i>Total reportes</div></div>
   </div>
   <div class="grid c3">
     <div class="card"><h3>Abiertas por criticidad</h3><div id="chPie"></div></div>
@@ -623,7 +623,7 @@ function calcular(F){
   const conPlazo=cerradasP.filter(n=>n.enPlazo!==null), mant=U.filter(u=>u.enMant);
   return {B,U,abiertas,periodo,cerradasP,mant,
     criticas:abiertas.filter(n=>n.nivel==='Crítica'),vencidas:abiertas.filter(n=>n.vencida),seg:abiertas.filter(n=>n.impSeg==='Sí'),
-    sinOT:abiertas.filter(n=>!n.ot&&!n.cierreSinOT),repetidas:ISS.filter(n=>n.repetida&&enRango(n.fecha,F)&&inSel(F.cc,n.un)&&inSel(F.tipo,n.tipoUnidad)&&inSel(F.sis,n.sistema)&&patOK(F,n.patente)).length,sinCierreOT:periodo.filter(n=>n.sinCierreOT),reinc:periodo.filter(n=>n.reincidente),
+    sinOT:abiertas.filter(n=>!n.ot&&!n.cierreSinOT),repetidas:ISS.filter(n=>n.repetida&&enRango(n.fecha,F)&&inSel(F.cc,n.un)&&inSel(F.tipo,n.tipoUnidad)&&inSel(F.sis,n.sistema)&&inSel(F.niv,n.nivel)&&patOK(F,n.patente)),sinCierreOT:periodo.filter(n=>n.sinCierreOT),reinc:periodo.filter(n=>n.reincidente),
     mttr:cerradasP.length?cerradasP.reduce((a,n)=>a+n.dias,0)/cerradasP.length:0,
     enPlazo:pct(conPlazo.filter(n=>n.enPlazo).length,conPlazo.length),nPlazo:conPlazo.length,
     edadProm:abiertas.length?abiertas.reduce((a,n)=>a+n.dias,0)/abiertas.length:0,
@@ -691,10 +691,12 @@ function graficoAgrupado(M,series,linea){
   return s+'</svg>';
 }
 /** Novedades por mes de reporte: cerradas / abiertas (estado actual). */
-function graficoMensual(B,F){
-  const M=mesesRango(F).map(m=>{const L=B.filter(n=>n.fecha&&enRango(n.fecha,F)&&n.fecha.slice(0,7)===m.k);return {l:m.l,v:{c:L.filter(n=>n.cerrada).length,a:L.filter(n=>!n.cerrada).length}};});
-  const tt=M.reduce((s,m)=>s+m.v.c+m.v.a,0), tc=M.reduce((s,m)=>s+m.v.c,0);
-  return graficoApilado(M,[{k:'c',l:'Cerradas',c:'#1D9E75'},{k:'a',l:'Abiertas',c:'#C00000'}],'Período: '+tt+' reportadas · '+pct(tc,tt)+'% cerradas · '+(tt-tc)+' abiertas');
+function graficoMensual(B,F,R){
+  // Cuenta TODOS los reportes del mes (igual que CloudFleet): cerradas, abiertas y repetidas de una falla abierta (gris)
+  const mes=(L,k)=>L.filter(n=>n.fecha&&enRango(n.fecha,F)&&n.fecha.slice(0,7)===k);
+  const M=mesesRango(F).map(m=>{const L=mes(B,m.k);return {l:m.l,v:{c:L.filter(n=>n.cerrada).length,a:L.filter(n=>!n.cerrada).length,r:mes(R||[],m.k).length}};});
+  const tc=M.reduce((s,m)=>s+m.v.c,0), ta=M.reduce((s,m)=>s+m.v.a,0), tr=M.reduce((s,m)=>s+m.v.r,0), tt=tc+ta+tr;
+  return graficoApilado(M,[{k:'c',l:'Cerradas',c:'#1D9E75'},{k:'a',l:'Abiertas',c:'#C00000'},{k:'r',l:'Repetidas (falla ya reportada y abierta)',c:'#b8bcc6'}],'Período: '+tt+' reportes · '+tc+' cerradas · '+ta+' abiertas'+(tr?' · '+tr+' repetidas':''));
 }
 function scrollFin(id){const sc=$(id).parentElement;sc.scrollLeft=sc.scrollWidth;}
 
@@ -851,13 +853,13 @@ function renderDash(){
   const F=filtrosDash(), K=calcular(F);
   $('dashNota').textContent='Todos los indicadores y gráficos = novedades reportadas entre '+fmt(F.desde)+' y '+fmt(F.hasta)+' (estado actual según isDone de CloudFleet). Única excepción: "En mantenimiento / Disponibilidad", que es la foto de hoy de Estado de Unidades.';
   $('kpis').innerHTML=
-    kpi('N','Abiertas',K.abiertas.length,'Edad prom. '+K.edadProm.toFixed(1)+' d'+(K.repetidas?' · '+K.repetidas+' reportes repetidos agrupados':''),"irLista('abiertas')")+
+    kpi('N','Abiertas',K.abiertas.length,'Edad prom. '+K.edadProm.toFixed(1)+' d'+(K.repetidas.length?' · sin contar '+K.repetidas.length+' reportes repetidos':''),"irLista('abiertas')")+
     kpi(K.sinCierreOT.length?'O':'G','Hechas con OT no cerrada',K.sinCierreOT.length,'novedad hecha, OT en Abierta o Cierre técnico',"irLista('','','reab')")+
     kpi('R','Críticas abiertas',K.criticas.length,K.seg.length+' en sistemas de seguridad',"irLista('abiertas','Crítica')")+
     kpi(K.vencidas.length?'R':'G','Fuera de SLA',K.vencidas.length,pct(K.vencidas.length,K.abiertas.length)+'% de abiertas',"irLista('abiertas','','venc')")+
     kpi(K.sinOT.length?'O':'G','Sin OT',K.sinOT.length,'requieren OT y no la tienen',"irLista('abiertas','','sinot')")+
     kpi('R','En mantenimiento hoy',K.mant.length,'Disponibilidad '+K.disp+'% ('+K.UE.length+' u. con estado) · foto actual',"goTo('v-flota')")+
-    kpi('B','Reportadas período',K.periodo.length,K.cerradasP.length+' ya cerradas ('+pct(K.cerradasP.length,K.periodo.length)+'%)')+
+    kpi('B','Reportadas período',K.periodo.length+K.repetidas.length,K.cerradasP.length+' cerradas'+(K.repetidas.length?' · '+K.repetidas.length+' repetidas de una falla abierta':''))+
     kpi(K.mttr>7?'A':'G','MTTR',K.mttr.toFixed(1)+' d','tiempo medio de cierre')+
     kpi(K.enPlazo>=85?'G':K.enPlazo>=70?'A':'R','Cierre en SLA',K.nPlazo?K.enPlazo+'%':'—','meta ≥ 85% · n='+K.nPlazo)+
     kpi(K.reinc.length?'O':'G','Reincidencias',K.reinc.length,pct(K.reinc.length,K.periodo.length)+'% · misma patente+sistema ≤'+CFG.REINC_DIAS+' d después de cerrada',"irLista('','','reinc')");
@@ -880,7 +882,7 @@ function renderDash(){
   $('chUnidades').innerHTML=bars(Object.entries(cu).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>{const u=UNI.find(x=>x.patente===k);return {l:k+(u?' · '+u.tipo:''),v,r:ru[k]||0,c:ru[k]?'var(--O)':'var(--N)',click:'abrirUnidad('+q(k)+')'};}),null,i=>i.v+(i.r?' <small>R'+i.r+'</small>':''))+
     '<p class="help">Naranja = con reincidencias. Candidatas a análisis de causa raíz / revisión del plan preventivo.</p>';
 
-  $('chMes').innerHTML=graficoMensual(K.B,F);
+  $('chMes').innerHTML=graficoMensual(K.B,F,K.repetidas);
   scrollFin('chMes');   // en celular arranca mostrando los meses recientes
 
   const wk=[]; const refS=F.hasta?_d(F.hasta):HOY, lunes=new Date(refS); lunes.setDate(lunes.getDate()-((lunes.getDay()+6)%7));
