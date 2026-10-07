@@ -275,7 +275,7 @@ table.hm tr.tot td{border-top:2px solid var(--N);font-weight:700}
     <div class="filters">
       <div style="grid-column:span 2"><label>Texto en la novedad</label><input id="lQ" placeholder="Descripción, sistema, reportó…" oninput="renderLista()"></div>
       <div><label>Estado</label><select id="lEstado" onchange="renderLista()"></select></div>
-      <div><label>Solo</label><select id="lSolo" onchange="renderLista()"><option value="">—</option><option value="venc">Fuera de SLA</option><option value="fs">Unidad en mantenimiento</option><option value="seg">Impacto seguridad</option><option value="reinc">Reincidentes</option><option value="sinot">Sin OT</option><option value="sinv">Sin vincular a unidad</option></select></div>
+      <div><label>Solo</label><select id="lSolo" onchange="renderLista()"><option value="">—</option><option value="venc">Fuera de SLA</option><option value="fs">Unidad en mantenimiento</option><option value="seg">Impacto seguridad</option><option value="reinc">Reincidentes</option><option value="sinot">Sin OT</option><option value="sinv">Sin vincular a unidad</option><option value="reab">Hechas con OT sin cierre final</option></select></div>
       <div><label>Orden</label><select id="lOrden" onchange="renderLista()"><option value="score">Criticidad</option><option value="dias">Antigüedad</option><option value="fecha">Más recientes</option></select></div>
     </div>
     <p class="help" id="lCount"></p>
@@ -514,7 +514,7 @@ async function cargar(forzar){
     if(DIAG.sinEstado) d.push(DIAG.sinEstado+' novedades de vehículos de CloudFleet sin fila en Estado de Unidades (se toman como operativos). Ej.: '+(DIAG.ejemplosSinEstado||[]).slice(0,8).join(', '));
     if(DIAG.cf) d.push('Validación CloudFleet (CF_PENDIENTES: '+DIAG.cf.cargados+' pendientes exportadas, hasta N° '+DIAG.cf.maxNumero+'): de '+DIAG.cf.abiertasIsDone+' con isDone=FALSE → '+DIAG.cf.confirmadasCF+' confirmadas + '+DIAG.cf.nuevasPostCF+' posteriores a la exportación se cuentan abiertas; '+DIAG.cf.sinPendienteCF+' excluidas por no figurar pendientes en CloudFleet.');
     else if(API_URL) d.push('Pendientes según isDone SIN validar contra CloudFleet (pestaña CF_PENDIENTES vacía): el total de abiertas puede estar sobreestimado.');
-    if(DIAG.cruceOT){const c=DIAG.cruceOT; d.push('Cruce novedades ↔ OT: '+c.conOT+' novedades con OT ('+c.otEncontrada+' encontradas, '+c.otNoEncontrada+' sin la OT en la pestaña OT) → '+c.cerradasPorOT+' cerradas por cierre final de OT · '+c.abiertasPorOT+' abiertas por OT sin cierre final'+(c.reabiertas?' (de ellas '+c.reabiertas+' figuraban como hechas en CloudFleet)':'')+(c.otAnulada?' · '+c.otAnulada+' con OT anulada (rige isDone)':'')+'.');}
+    if(DIAG.cruceOT){const c=DIAG.cruceOT; if(c.otNoEncontrada||c.otOtraPatente) d.push('Vínculo novedad ↔ OT: '+c.conOT+' novedades con N° de OT · '+c.otNoEncontrada+' OT no encontradas en la pestaña OT'+(c.otOtraPatente?' · '+c.otOtraPatente+' con N° de OT de otra patente (vínculo descartado)':'')+'. Detalle: auditarCruceOT().');}
     if(API_URL&&DIAG.otCargadas===0) d.push('Pestaña OT vacía: ejecutar sincronizarOT() en el editor de Apps Script.');
     if(DIAG.erroresCriterios&&DIAG.erroresCriterios.length) d.push('Matriz de criterios: '+DIAG.erroresCriterios.join(' · '));
     if(DIAG.columnasNoEncontradas&&DIAG.columnasNoEncontradas.length) d.push('Columnas esenciales de ISSUE no reconocidas: '+DIAG.columnasNoEncontradas.join(', ')+' (ver ?action=mapeo).');
@@ -618,7 +618,7 @@ function calcular(F){
   const conPlazo=cerradasP.filter(n=>n.enPlazo!==null), mant=U.filter(u=>u.enMant);
   return {B,U,abiertas,periodo,cerradasP,mant,
     criticas:abiertas.filter(n=>n.nivel==='Crítica'),vencidas:abiertas.filter(n=>n.vencida),seg:abiertas.filter(n=>n.impSeg==='Sí'),
-    sinOT:abiertas.filter(n=>!n.ot&&!n.cierreSinOT),reinc:periodo.filter(n=>n.reincidente),
+    sinOT:abiertas.filter(n=>!n.ot&&!n.cierreSinOT),sinCierreOT:B.filter(n=>n.sinCierreOT),reinc:periodo.filter(n=>n.reincidente),
     mttr:cerradasP.length?cerradasP.reduce((a,n)=>a+n.dias,0)/cerradasP.length:0,
     enPlazo:pct(conPlazo.filter(n=>n.enPlazo).length,conPlazo.length),nPlazo:conPlazo.length,
     edadProm:abiertas.length?abiertas.reduce((a,n)=>a+n.dias,0)/abiertas.length:0,
@@ -642,7 +642,7 @@ function card(n){
     '<div><b>'+esc(n.sistema)+'</b></div><div class="d">'+esc(n.descripcion)+'</div>'+
     '<div><span class="chip b">'+esc(n.estadoRaw)+'</span>'+(n.condicion==='Fuera de servicio'?'<span class="chip r">Unidad en mant.</span>':'')+'<span class="chip">'+n.dias+' d</span>'+
     (n.vencida?'<span class="chip r">Fuera de SLA</span>':'')+(n.impSeg==='Sí'?'<span class="chip r">Seguridad</span>':'')+(n.impAmb==='Sí'?'<span class="chip a">Ambiental</span>':'')+
-    (n.reincidente?'<span class="chip a">Reincidente</span>':'')+(n.ot?chipOT(n.otEstado,'OT '+n.ot)+(n.reabierta?'<span class="chip r">Hecha en CF sin cierre final</span>':''):(n.cerrada?'':n.cierreSinOT?'<span class="chip">Sin OT req.</span>':'<span class="chip a">Sin OT</span>'))+'</div></div>';
+    (n.reincidente?'<span class="chip a">Reincidente</span>':'')+(n.ot?chipOT(n.otEstado,'OT '+n.ot)+(n.sinCierreOT?'<span class="chip a">OT sin cierre final</span>':''):(n.cerrada?'':n.cierreSinOT?'<span class="chip">Sin OT req.</span>':'<span class="chip a">Sin OT</span>'))+'</div></div>';
 }
 
 /* ===================== GRÁFICOS MENSUALES (SVG) ===================== */
@@ -754,7 +754,7 @@ function renderOT(){
     '<tr class="tot"><td class="n">Total</td>'+M12.map(m=>celda(B12.filter(o=>o.fCreada.slice(0,7)===m.k))).join('')+celda(B12)+'</tr></tbody></table>'+(Object.keys(vol).length>15?'<p class="help">Se muestran los 15 creadores con más OT. Usá el filtro "Creador de la OT" para ver otros.</p>':''):'<div class="empty">Sin datos</div>';
 
   // Coherencia
-  const reab=ISS.filter(n=>n.reabierta&&!n.descartada&&inSel(F.cc,n.un)&&patOK(F,n.patente));
+  const reab=ISS.filter(n=>n.sinCierreOT&&!n.descartada&&inSel(F.cc,n.un)&&patOK(F,n.patente));
   const FA=flotaActiva().filter(u=>inSel(F.cc,u.un)&&inSel(F.tipo,u.tipo)&&patOK(F,u.patente)), pendPat=new Set(OTS.filter(o=>!otFin(o)).map(o=>_key(o.patente)));
   const afdPat=new Set(OTS.filter(o=>!otFin(o)&&o.afectaDisp).map(o=>_key(o.patente)));
   const idxOT={};OTS.forEach(o=>idxOT[o.numero]=o);
@@ -764,7 +764,7 @@ function renderOT(){
   const blk=(tit,arr,item,txt)=>'<details style="margin-bottom:8px"><summary>'+(arr.length?'<span class="chip r">'+arr.length+'</span>':'<span class="chip g">0</span>')+' '+tit+'</summary><p class="help">'+txt+'</p><div style="margin-top:6px">'+(arr.length?arr.slice(0,60).map(item).join(''):'<span class="muted small">Sin desvíos</span>')+(arr.length>60?' <span class="muted small">… y '+(arr.length-60)+' más</span>':'')+'</div></details>';
   const chU=u=>'<span class="chip b" style="cursor:pointer" onclick="abrirUnidad('+q(u.patente)+')">'+esc(u.patente)+'</span>';
   $('oCoh').innerHTML=
-    blk('Novedades marcadas como hechas en CloudFleet con OT sin cierre final',reab,n=>'<span class="chip a" style="cursor:pointer" onclick="abrir('+q(n.id)+')">N° '+esc(n.id)+' · '+esc(n.patente)+' · OT '+esc(n.ot)+' ('+esc(n.otEstado)+')</span>','El tablero las mantiene ABIERTAS. Es el caso detectado en auditoría: corresponde completar el cierre final de la OT.')+
+    blk('Novedades marcadas como hechas en CloudFleet con OT sin cierre final',reab,n=>'<span class="chip a" style="cursor:pointer" onclick="abrir('+q(n.id)+')">N° '+esc(n.id)+' · '+esc(n.patente)+' · OT '+esc(n.ot)+' ('+esc(n.otEstado)+')</span>','En Novedades cuentan como cerradas (isDone), pero la OT no tiene cierre final. Es el caso detectado en auditoría: completar el cierre final de la OT.')+
     blk('OT en cierre técnico hace más de '+lim+' días',tecV.slice().sort((a,b)=>otDiasTec(b)-otDiasTec(a)),o=>'<span class="chip a" style="cursor:pointer" onclick="abrirOT('+q(o.numero)+')">OT '+esc(o.numero)+' · '+esc(o.patente)+' · '+otDiasTec(o)+' d · '+esc(o.creadaPor||'—')+'</span>','Trabajo terminado sin cierre administrativo. Parámetro: OT_DIAS_CIERRE_FINAL en Code.gs.')+
     blk('Unidades EN MANTENIMIENTO (Estado de Unidades) sin OT abierta',mantSinOT,chU,'Falta abrir la OT en CloudFleet o el estado de la unidad no está actualizado.')+
     blk('Unidades DISPONIBLES con OT abierta que afecta disponibilidad',dispConOT,chU,'La OT indica unidad no disponible pero Estado de Unidades la muestra operativa: verificar cuál está mal.')+
@@ -842,6 +842,7 @@ function renderDash(){
   $('dashNota').textContent='Filtros generales arriba. Abiertas, críticas, SLA y sin OT = foto al '+fmt(_iso(HOY))+'. Reportadas, MTTR, plazo y Pareto = período '+fmt(F.desde)+' a '+fmt(F.hasta)+'. Novedades descartadas excluidas.';
   $('kpis').innerHTML=
     kpi('N','Abiertas',K.abiertas.length,'Edad prom. '+K.edadProm.toFixed(1)+' d',"irLista('abiertas')")+
+    kpi(K.sinCierreOT.length?'O':'G','Hechas sin cierre de OT',K.sinCierreOT.length,'cerradas en CloudFleet con la OT sin cierre final',"irLista('','','reab')")+
     kpi('R','Críticas abiertas',K.criticas.length,K.seg.length+' en sistemas de seguridad',"irLista('abiertas','Crítica')")+
     kpi(K.vencidas.length?'R':'G','Fuera de SLA',K.vencidas.length,pct(K.vencidas.length,K.abiertas.length)+'% de abiertas',"irLista('abiertas','','venc')")+
     kpi(K.sinOT.length?'O':'G','Sin OT',K.sinOT.length,'requieren OT y no la tienen',"irLista('abiertas','','sinot')")+
@@ -942,10 +943,10 @@ function filtrarLista(){
   const L=vivas().filter(n=>{
     if(e==='abiertas'&&n.cerrada) return false; if(e&&e!=='abiertas'&&n.estadoRaw!==e) return false;
     if(F.niv.length&&(!F.niv.includes(n.nivel)||n.cerrada)) return false; if(!inSel(F.cc,n.un)||!inSel(F.sis,n.sistema)||!inSel(F.tipo,n.tipoUnidad)||!patOK(F,n.patente)) return false;
-    if((F.desde||F.hasta)&&e!=='abiertas'&&!(enRango(n.fecha,F)||(!n.cerrada))) return false;
+    if((F.desde||F.hasta)&&e!=='abiertas'&&s!=='reab'&&!(enRango(n.fecha,F)||(!n.cerrada))) return false;
     if(s==='venc'&&!n.vencida) return false; if(s==='fs'&&(n.condicion!=='Fuera de servicio'||n.cerrada)) return false;
     if(s==='seg'&&n.impSeg!=='Sí') return false; if(s==='reinc'&&!n.reincidente) return false;
-    if(s==='sinot'&&(n.ot||n.cerrada||n.cierreSinOT)) return false; if(s==='sinv'&&n.vinculada) return false;
+    if(s==='sinot'&&(n.ot||n.cerrada||n.cierreSinOT)) return false; if(s==='sinv'&&n.vinculada) return false; if(s==='reab'&&!n.sinCierreOT) return false;
     if(qq&&![n.id,n.interno,n.patente,n.descripcion,n.sistema,n.ot,n.reporta,n.tipoUnidad,n.categoria].join(' ').toLowerCase().includes(qq)) return false;
     return true;
   });
@@ -970,7 +971,7 @@ function abrir(id,push){
     '<div style="margin-bottom:10px">'+n.motivos.map(m=>'<span class="chip r">'+esc(m)+'</span>').join('')+'</div>'+
     '<div class="kv"><b>Novedad</b><span>'+esc(n.descripcion)+'</span><b>Categoría sistema</b><span>'+esc(n.categoria||'—')+'</span><b>Clasificación</b><span>'+esc(n.sistema)+' ('+esc(n.criticidadSistema)+')</span>'+
     '<b>Reportó</b><span>'+esc(n.reporta||'—')+' · '+fmt(n.fecha)+(n.odometro?' · '+esc(n.odometro)+' km':'')+'</span>'+
-    '<b>Responsable</b><span>'+esc(n.responsable||'—')+'</span><b>Estado</b><span>'+esc(n.estadoRaw)+' · '+n.dias+' días</span><b>Prioridad</b><span>'+esc(n.prioridad||'—')+'</span><b>OT</b><span>'+(n.ot?esc(n.ot)+' '+chipOT(n.otEstado,n.otEstado||'—')+(n.otTaller?' · '+esc(n.otTaller):'')+(n.reabierta?' <span class="chip r">Marcada como hecha en CloudFleet con OT sin cierre final: se mantiene ABIERTA</span>':''):'Sin OT')+'</span>'+
+    '<b>Responsable</b><span>'+esc(n.responsable||'—')+'</span><b>Estado</b><span>'+esc(n.estadoRaw)+' · '+n.dias+' días</span><b>Prioridad</b><span>'+esc(n.prioridad||'—')+'</span><b>OT</b><span>'+(n.ot?esc(n.ot)+' '+chipOT(n.otEstado,n.otEstado||'—')+(n.otTaller?' · '+esc(n.otTaller):'')+(n.sinCierreOT?' <span class="chip a">Novedad hecha en CloudFleet, pero la OT no tiene cierre final</span>':''):'Sin OT')+'</span>'+
     '<b>SLA</b><span>'+n.sla+' d → '+fmt(n.fCompromiso)+(n.vencida?' <span class="chip r">FUERA DE SLA</span>':'')+(n.cerrada?(n.enPlazo===false?' <span class="chip r">cerró fuera de plazo</span>':n.enPlazo?' <span class="chip g">cerró en plazo</span>':''):'')+'</span>'+
     (n.cerrada?'<b>Cierre</b><span>'+fmt(n.fCierre)+'</span>':'')+
     '<b>Unidad</b><span>'+esc([n.tipoUnidad,n.marca,n.un||n.grupo,n.propiedad].filter(Boolean).join(' · ')||'—')+' · <b>'+esc(n.estadoUnidad)+'</b></span></div>'+
@@ -1110,7 +1111,7 @@ function demoInit(){
   unidades.filter(u=>u.enMant&&u.ot&&rnd()<0.8).forEach(u=>mkOT(u.ot.replace('OT-',''),u.patente,u.fBaja,false));
   const oi={};ots.forEach(o=>oi[o.numero]=o);
   issues.forEach(n=>{const o=n.ot&&oi[n.ot.replace('OT-','')];if(!o)return;n.otEstado=o.estado;n.otTaller=o.taller;
-    if(o.estado==='Cerrada'){n.cerrada=true;n.fCierre=o.fFinal||n.fCierre;}else if(o.estado!=='Anulada'){if(n.cerrada)n.reabierta=true;n.cerrada=false;n.fCierre='';n.estadoRaw=o.estado==='Abierta'?'OT abierta':'OT en cierre técnico';}});
+    n.sinCierreOT=n.cerrada&&(o.estado==='Abierta'||o.estado==='Cierre técnico');});
   DEMO_DB={unidades,flota:armarFlota(unidades,[]),issues,sistemas,hoy,ots};
 }
 function demoApi(action){
