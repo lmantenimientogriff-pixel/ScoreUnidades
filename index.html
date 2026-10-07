@@ -356,9 +356,9 @@ function _iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'
 function _norm(s){ return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
 function _key(s){ return String(s==null?'':s).toUpperCase().replace(/[^A-Z0-9]/g,''); }
 function clasificar(n,sistemas){
-  const cat=_norm(n.categoria), txt=_norm(n.categoria+' '+n.descripcion);
+  const cat=_norm(n.categoria), txt=' '+_norm(n.categoria+' '+n.descripcion)+' ';
   let s=sistemas.find(x=>cat&&(_norm(x.sistema)===cat||x.claves.some(k=>cat===k)));
-  if(!s) s=sistemas.find(x=>x.claves.some(k=>k&&(' '+txt+' ').indexOf(' '+k)>=0));
+  if(!s){let bl=0;sistemas.forEach(x=>x.claves.forEach(k=>{if(k&&k.length>bl&&txt.indexOf(' '+k)>=0){s=x;bl=k.length;}}));}
   return s||sistemas.find(x=>x.sistema==='Otros')||{sistema:'Otros',criticidad:'Menor',seguridad:'No',ambiental:'No',cierreSinOT:'No',nivelFijo:''};
 }
 function calcularCriticidad(n,hoy){
@@ -1064,9 +1064,9 @@ function exportarPDF(){
 let DEMO_DB=null;
 function demoInit(){
   let seed=11; const rnd=()=>{seed=(seed*16807)%2147483647;return (seed-1)/2147483646;}; const pick=a=>a[Math.floor(rnd()*a.length)];
-  const T=[['Frenos','Crítico','Sí','No','freno, frenos, pulmon, cinta, cintas, campana, valvula rele, perdida de aire'],['Dirección','Crítico','Sí','No','direccion, extremo, caja de direccion'],
+  const T=[['Frenos','Crítico','Sí','No','freno, frenos, pulmon, cinta de freno, cintas de freno, campana, valvula rele, perdida de aire'],['Dirección','Crítico','Sí','No','direccion, extremo, caja de direccion'],
     ['Neumáticos y llantas','Crítico','Sí','No','neumatico, cubierta, goma, llanta, rueda, tuerca de rueda'],['Suspensión y ejes','Crítico','Sí','No','suspension, elastico, bolsa de aire, amortiguador, buje'],
-    ['Luces y señalización','Crítico','Sí','No','luz, luces, baliza, faro, stop'],['Seguridad activa (ADAS/DMS/telemetría)','Crítico','Sí','No','adas, dms, camara, telemetria, gps'],
+    ['Luces y señalización','Crítico','Sí','No','luz, luces, baliza, faro, stop, reflectiv, cintas reflectivas'],['Seguridad activa (ADAS/DMS/telemetría)','Crítico','Sí','No','adas, dms, camara, telemetria, gps'],
     ['Elementos de seguridad','Crítico','Sí','No','matafuego, extintor, cinturon, calza, botiquin, epp, equipar','Sí'],['Hidrogrúa / izaje','Crítico','Sí','No','hidrogrua, grua, pluma, limitador de carga'],
     ['Cisterna / válvulas / mangueras','Mayor','No','Sí','cisterna, valvula, manguera, boca de hombre'],['Bomba de vacío / compresor','Mayor','No','No','bomba de vacio, vacio, compresor'],
     ['Sistema hidráulico','Mayor','No','Sí','hidraulic, toma de fuerza'],['Motor','Mayor','No','No','motor, aceite, turbo, potencia, temperatura'],['Transmisión / embrague','Mayor','No','No','caja de cambio, embrague, cardan'],
