@@ -427,7 +427,7 @@ function enriquecer(issues, flota, sistemas, hoy) {
     n.interno = u ? (u.interno || u.patente) : codigo;
     n.tipoUnidad = u ? u.tipo : ''; n.un = u ? u.un : ''; n.cc = u ? u.cc : '';
     n.grupo = u ? (u.grupo || '') : ''; n.propiedad = u ? (u.propiedad || '') : ''; n.marca = u ? ((u.marca || '') + ' ' + (u.linea || '')).trim() : '';
-    n.vinculada = !!u; n.conEstado = !!(u && u.tieneEstado);
+    n.vinculada = !!u; n.enMaestro = !!(u && u.enMaestro); n.conEstado = !!(u && u.tieneEstado);
     n.estadoUnidad = u ? u.estado : 'No existe en flota';
     n.condicion=u&&u.enMant?'Fuera de servicio':'Operativa';
     const s=clasificar(n,sistemas);
@@ -510,7 +510,8 @@ async function cargar(forzar){
     $('hUpd').textContent='Datos '+r.generado+(DIAG.ultimaSync?' · Sync novedades '+DIAG.ultimaSync:'')+(DIAG.ultimaSyncOT?' · Sync OT '+DIAG.ultimaSyncOT:'');
     const d=[];
     if(DIAG.vehiculosCargados===0) d.push('Falta la pestaña VEHICULOS (BD-VEHICULOS de CloudFleet): sin ella el cruce depende solo de Estado de Unidades.');
-    if(DIAG.sinVincular) d.push(DIAG.sinVincular+' novedades de vehículos que no existen en la flota de CloudFleet ni en Estado de Unidades. Ej.: '+(DIAG.ejemplosSinVincular||[]).slice(0,8).join(', '));
+    if(DIAG.descartadasSinUnidad) d.push(DIAG.descartadasSinUnidad+' novedades descartadas por ser de unidades que ya no están en BD-VEHICULOS. Ej.: '+(DIAG.ejemplosDescartadas||[]).slice(0,8).join(', '));
+    if(DIAG.fechasNovedades&&DIAG.fechasNovedades.max&&diasDesde(DIAG.fechasNovedades.max)>7) d.push('ATENCIÓN: la novedad más reciente es del '+fmt(DIAG.fechasNovedades.max)+'. No están llegando novedades nuevas desde la integración: ejecutar diagnosticoFechas() y revisar la pestaña Issues de la API.');
     if(DIAG.sinEstado) d.push(DIAG.sinEstado+' novedades de vehículos de CloudFleet sin fila en Estado de Unidades (se toman como operativos). Ej.: '+(DIAG.ejemplosSinEstado||[]).slice(0,8).join(', '));
     if(DIAG.cf) d.push('Validación CloudFleet (CF_PENDIENTES: '+DIAG.cf.cargados+' pendientes exportadas, hasta N° '+DIAG.cf.maxNumero+'): de '+DIAG.cf.abiertasIsDone+' con isDone=FALSE → '+DIAG.cf.confirmadasCF+' confirmadas + '+DIAG.cf.nuevasPostCF+' posteriores a la exportación se cuentan abiertas; '+DIAG.cf.sinPendienteCF+' excluidas por no figurar pendientes en CloudFleet.');
     if(DIAG.cruceOT){const c=DIAG.cruceOT; if(c.otNoEncontrada||c.otOtraPatente) d.push('Vínculo novedad ↔ OT: '+c.conOT+' novedades con N° de OT · '+c.otNoEncontrada+' OT no encontradas en la pestaña OT'+(c.otOtraPatente?' · '+c.otOtraPatente+' con N° de OT de otra patente (vínculo descartado)':'')+'. Detalle: auditarCruceOT().');}
@@ -578,7 +579,8 @@ function onFiltro(){
     const v=document.querySelector('.view.on'); if(v&&!VDET.includes(v.id)) goTo(v.id,false);
   },120);
 }
-function limpiarFiltros(){Object.keys(MS).forEach(k=>msSet(k,[]));const h=new Date(),d=new Date(h);d.setDate(d.getDate()-89);$('gDesde').value=_iso(d);$('gHasta').value=_iso(h);onFiltro();}
+const FECHA_DESDE_DEFECTO='2026-01-01';
+function limpiarFiltros(){Object.keys(MS).forEach(k=>msSet(k,[]));$('gDesde').value=FECHA_DESDE_DEFECTO;$('gHasta').value=_iso(new Date());onFiltro();}
 function filtrosTexto(){return $('gfResumen').textContent;}
 
 /* ===================== BUSCADOR GLOBAL ===================== */
@@ -1127,7 +1129,7 @@ function demoApi(action){
 /* ===================== INICIO ===================== */
 (function init(){
   const h=new Date(), d=new Date(h); d.setDate(d.getDate()-89);
-  $('gDesde').value=_iso(d); $('gHasta').value=_iso(h);
+  $('gDesde').value=FECHA_DESDE_DEFECTO; $('gHasta').value=_iso(h);
   if(DEMO) $('demoBanner').style.display='block';
   cargar();
 })();
